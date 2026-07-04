@@ -1,3 +1,4 @@
+import { useState } from "react";
 // นำเข้าไอคอน Search จาก lucide-react สำหรับแสดงในช่องค้นหา
 import { Search } from "lucide-react";
 // นำเข้า UI components ที่เตรียมไว้แล้วจาก shadcn/ui
@@ -14,6 +15,7 @@ import {
 import ArticleCard from "@/components/ArticleCard";
 // ARTICLES = ข้อมูลบทความทั้งหมด (เก็บในไฟล์ data/articles.js)
 import { ARTICLES } from "@/data/articles";
+import { cn } from "@/lib/utils";
 
 // รายการหมวดหมู่บทความ — value ใช้เป็นค่าภายใน, label ใช้แสดงบนหน้าจอ
 const CATEGORIES = [
@@ -25,6 +27,8 @@ const CATEGORIES = [
 
 // ArticleSection = ส่วนแสดงบทความล่าสุด พร้อมช่องค้นหาและตัวกรองหมวดหมู่
 function ArticleSection() {
+  const [category, setCategory] = useState("highlight");
+
   return (
     // <section> = แท็ก HTML สำหรับส่วนเนื้อหาหลักของหน้า (semantic HTML)
     <section className="bg-blog-page px-4 pb-12 md:px-8 lg:px-16">
@@ -60,18 +64,24 @@ function ArticleSection() {
             >
               Category
             </Label>
-            <Select defaultValue="highlight">
+            <Select value={category} onValueChange={setCategory}>
               <SelectTrigger
                 id="article-category"
                 className="h-12 w-full min-w-0 rounded-xl border-stone-200 bg-white px-4 text-base text-stone-950 data-[size=default]:h-12 [&_svg]:size-5 [&_svg]:text-stone-400"
               >
                 <SelectValue placeholder="Highlight" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent
+                position="popper"
+                side="bottom"
+                sideOffset={4}
+                align="start"
+                className="w-(--radix-select-trigger-width) rounded-xl border-stone-200 bg-white shadow-md"
+              >
                 {/* .map() วนลูปสร้าง <SelectItem> จากทุกรายการใน CATEGORIES */}
-                {CATEGORIES.map((category) => (
-                  <SelectItem key={category.value} value={category.value}>
-                    {category.label}
+                {CATEGORIES.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -86,20 +96,27 @@ function ArticleSection() {
             className="flex flex-wrap items-center gap-2"
             aria-label="Article categories"
           >
-            {CATEGORIES.map((category, index) => (
-              <li key={category.value}>
-                <button
-                  type="button"
-                  className={
-                    index === 0
-                      ? "rounded-full bg-stone-800 px-4 py-2 text-sm font-medium text-white"
-                      : "rounded-full px-4 py-2 text-sm font-medium text-stone-500"
-                  }
-                >
-                  {category.label}
-                </button>
-              </li>
-            ))}
+            {CATEGORIES.map((item) => {
+              const isActive = category === item.value;
+
+              return (
+                <li key={item.value}>
+                  <button
+                    type="button"
+                    disabled={isActive}
+                    onClick={() => setCategory(item.value)}
+                    className={cn(
+                      "rounded-full px-4 py-2 text-sm font-medium transition-colors",
+                      isActive
+                        ? "bg-stone-800 text-white"
+                        : "text-stone-500 hover:bg-white",
+                    )}
+                  >
+                    {item.label}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
 
           {/* ช่องค้นหาฝั่งขวา — max-w-xs จำกัดความกว้างไม่ให้ยาวเกินไป */}

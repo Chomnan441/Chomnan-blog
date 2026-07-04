@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import logo from "@/assets/logo.svg";
+import logoHover from "@/assets/logo-hoverNew.gif";
 
-// แถบนำทางหลักของเว็บไซต์ รองรับทั้งหน้าจอ desktop และ mobile
+// แถบนำทางหลักของเว็บไซต์ รองรับทั้งหน้าจอ des3ktop และ mobile
 function NavBar() {
   // เก็บสถานะเปิด/ปิดเมนูบนมือถือ (false = ปิด, true = เปิด)
   // useState: เป็น Hook ของ React ใช้สำหรับสร้างและจัดการ "สถานะ" (State) ภายในคอมโพเนนต์
@@ -26,15 +28,24 @@ function NavBar() {
   return (
     <header className="border-b border-stone-200 bg-blog-page">
       <nav
-        className="mx-auto flex max-w-7xl items-center justify-between px-4 py-5 md:px-8 lg:px-16"
+        className="mx-auto flex max-w-7xl items-center justify-between px-4 py-0 md:px-8 lg:px-16"
         aria-label="Main navigation"
       >
         {/* โลโก้/ชื่อเว็บไซต์ — ลิงก์กลับหน้าแรก */}
-        <a
-          href="#"
-          className="text-2xl font-bold tracking-tight text-stone-950"
-        >
-          hh.
+        <a href="#" className="group inline-flex shrink-0 items-center">
+          <span className="relative inline-block h-15 md:h-20">
+            <img
+              src={logo}
+              alt="Chomnan Blog logo"
+              className="h-15 w-auto object-contain opacity-100 transition-all duration-300 ease-in-out group-hover:scale-95 group-hover:opacity-0 md:h-20"
+            />
+            <img
+              src={logoHover}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 h-full w-full scale-100 object-contain opacity-0 transition-all duration-300 ease-in-out group-hover:scale-100 group-hover:opacity-100"
+            />
+          </span>
         </a>
 
         {/* ปุ่ม Log in / Sign up สำหรับหน้าจอ md ขึ้นไป (ซ่อนบนมือถือ) */}
