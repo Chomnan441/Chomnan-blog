@@ -2,14 +2,14 @@
 
 // เก็บ URL รูปภาพไว้ในตัวแปร constant (ค่าคงที่ ไม่เปลี่ยนระหว่างรันแอป)
 // แยกออกมาไว้ด้านบนเพื่อให้อ่านโค้ดง่าย และแก้ลิงก์รูปได้ที่เดียว
-const HERO_IMAGE_URL =
-  "https://res.cloudinary.com/dcbpjtd1r/image/upload/v1728449784/my-blog-post/xgfy0xnvyemkklcqodkg.jpg";
+const HERO_IMAGE_URL = "https://i.ibb.co/Z1wqS9vj/Profile.jpg";
+const HERO_IMAGE_HOVER_URL = "https://i.ibb.co/W48T8Vpw/Profile-Hover.png";
 
 // object เก็บข้อมูลผู้เขียน — ใช้ key เช่น label, name, bio แล้วเรียก AUTHOR.name ใน JSX
 const AUTHOR = {
   label: "Author",
-  name: "Thompson P.",
-  bio: "I am a pet enthusiast and freelance writer who specializes in animal behavior and care. With a deep love for cats, I enjoy sharing insights on feline companionship and wellness. When I'm not writing, I spends time volunteering at my local animal shelter, helping cats find loving homes.",
+  name: "Chomnan P.",
+  bio: "I’m an everyday person who always questions why astrologers make the predictions they do during a reading. It makes me wonder: the astrologer is human, bringing their own experiential lens to the table, and they deliver the reading from that viewpoint. What if we applied our own lens instead? If we changed our role from the one receiving the prophecy to the one reading our own destiny, what would that look like? Would the narrative stay the same, or how would it change? (Disclaimer: I mean no disrespect to the predictions or perspectives of others; I simply always hold space for different points of view)",
 };
 
 // React Component — ฟังก์ชันที่ return JSX (โครงสร้างหน้าจอที่ React แสดงผล)
@@ -24,26 +24,36 @@ function HeroSection() {
         <div className="flex flex-col gap-6 lg:max-w-md">
           {/* h1 = หัวข้อระดับสูงสุดของหน้า (มีได้แค่หนึ่ง h1 ต่อหน้า) */}
           <h1 className="text-4xl font-bold leading-tight tracking-tight text-stone-950 md:text-5xl lg:text-[3.25rem] lg:leading-[1.1]">
-            Stay Informed,
+            Decoding
             {/* <br /> = ขึ้นบรรทัดใหม่ */}
             <br />
-            Stay Inspired
+            the Cosmic Blueprint
           </h1>
 
           <p className="text-base leading-relaxed text-stone-600 md:text-lg">
-            Discover a World of Knowledge at Your Fingertips. Your Daily Dose of
-            Inspiration and Information.
+            Move beyond daily newspaper horoscopes and explore the profound
+            concepts of Western Astrology. Discover the planetary positions at
+            your birth, and let them reveal the gifts you were given to create
+            something new in this lifetime. Seek knowledge to move forward, not
+            to fear
           </p>
         </div>
 
         {/* คอลัมน์ที่ 2: รูปภาพ — <figure> เหมาะกับรูปหรือสื่อประกอบ */}
-        <figure className="mx-auto w-full max-w-xs lg:max-w-sm">
-          {/* alt บังคับสำหรับ accessibility — อธิบายรูปให้ screen reader และเมื่อโหลดรูปไม่ได้ */}
-          <img
-            src={HERO_IMAGE_URL}
-            alt="A man with a cat on his shoulder standing in a snowy forest with autumn leaves"
-            className="aspect-3/4 w-full rounded-2xl object-cover"
-          />
+        <figure className="group mx-auto w-full max-w-xs shrink-0 lg:w-80 lg:max-w-sm">
+          <span className="relative block aspect-3/4 w-full overflow-hidden rounded-2xl shadow-xl shadow-stone-900/20">
+            <img
+              src={HERO_IMAGE_URL}
+              alt="Chomnan P. standing on a coastal rock overlooking a calm turquoise sea under an overcast sky"
+              className="absolute inset-0 h-full w-full object-cover opacity-100 transition-opacity duration-300 ease-in-out group-hover:opacity-0"
+            />
+            <img
+              src={HERO_IMAGE_HOVER_URL}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-300 ease-in-out group-hover:opacity-100"
+            />
+          </span>
         </figure>
 
         {/* คอลัมน์ที่ 3: ข้อมูลผู้เขียน — <aside> ใช้กับเนื้อหาเสริมที่เกี่ยวข้อง */}
