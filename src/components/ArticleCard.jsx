@@ -36,7 +36,10 @@ function ArticleCard({
 
       {/* หัวข้อบทความ — ใช้ <h3> เพราะอยู่ใต้หัวข้อหลักของ section */}
       <h3 className="text-xl font-bold leading-snug text-stone-950">
-        <Link to={`/post/${id}`} className="transition-colors hover:text-stone-700">
+        <Link
+          to={`/post/${id}`}
+          className="transition-colors hover:text-stone-700"
+        >
           {title}
         </Link>
       </h3>
