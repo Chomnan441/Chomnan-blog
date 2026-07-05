@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -32,7 +33,7 @@ function NavBar() {
         aria-label="Main navigation"
       >
         {/* โลโก้/ชื่อเว็บไซต์ — ลิงก์กลับหน้าแรก */}
-        <a href="#" className="group inline-flex shrink-0 items-center">
+        <Link to="/" className="group inline-flex shrink-0 items-center">
           <span className="relative inline-block h-15 md:h-20">
             <img
               src={logo}
@@ -46,7 +47,7 @@ function NavBar() {
               className="absolute inset-0 h-full w-full scale-100 object-contain opacity-0 transition-all duration-300 ease-in-out group-hover:scale-100 group-hover:opacity-100"
             />
           </span>
-        </a>
+        </Link>
 
         {/* ปุ่ม Log in / Sign up สำหรับหน้าจอ md ขึ้นไป (ซ่อนบนมือถือ) */}
         <div className="hidden items-center gap-3 md:flex">

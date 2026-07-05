@@ -1,4 +1,5 @@
 // ส่วนท้ายของหน้าเว็บ (Footer) — แสดงลิงก์โซเชียลและลิงก์กลับหน้าแรก
+import { Link } from "react-router-dom";
 
 // Component ย่อยสำหรับไอคอน LinkedIn
 // รับ props ชื่อ className เพื่อให้ parent กำหนดขนาด/สีผ่าน Tailwind ได้
@@ -99,12 +100,12 @@ export function Footer() {
         </div>
 
         {/* ลิงก์กลับหน้าแรก — อยู่กลุ่มขวาบนจอใหญ่ */}
-        <a
-          href="#"
+        <Link
+          to="/"
           className="text-sm font-medium text-stone-800 underline underline-offset-4 transition-colors hover:text-stone-600"
         >
           Home page
-        </a>
+        </Link>
       </div>
     </footer>
   );

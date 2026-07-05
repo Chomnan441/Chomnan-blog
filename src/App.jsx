@@ -1,18 +1,16 @@
-import NavBar from "./components/NavBar";
-import HeroSection from "./components/HeroSection";
-import ArticleSection from "./components/ArticleSection";
-import { Footer } from "./components/Footer";
+import { Route, Routes } from "react-router-dom";
+import HomePage from "@/pages/HomePage";
+import ViewPostPage from "@/pages/ViewPostPage";
+import NotFoundPage from "@/pages/NotFoundPage";
 
 function App() {
   return (
-    <div className="min-h-svh bg-blog-page">
-      <NavBar />
-      <main>
-        <HeroSection />
-        <ArticleSection />
-      </main>
-      <Footer />
-    </div>
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/post/:postId" element={<ViewPostPage />} />
+      <Route path="/not-found" element={<NotFoundPage />} />
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes>
   );
 }
 
