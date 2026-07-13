@@ -9,6 +9,7 @@ import {
   authenticateUser,
   clearSession,
   getStoredSession,
+  isAdmin as checkIsAdmin,
   registerUser,
   resetUserPassword,
   saveSession,
@@ -80,9 +81,12 @@ export function AuthProvider({ children }) {
     [user],
   );
 
+  const isAdmin = checkIsAdmin(user);
+
   const value = useMemo(
     () => ({
       user,
+      isAdmin,
       login,
       signUp,
       completeRegistration,
@@ -92,6 +96,7 @@ export function AuthProvider({ children }) {
     }),
     [
       user,
+      isAdmin,
       login,
       signUp,
       completeRegistration,
