@@ -137,7 +137,7 @@ function ArticleSearch({ className, inputClassName }) {
 
     if (event.key === "ArrowDown") {
       event.preventDefault(); // ป้องกัน cursor เลื่อนในช่อง input
-      // % results.length = วนกลับไปรายการแรกเมื่อถึงรายการสุดท้าย
+      // % results.length = วนกลับไปรายการแรกเมื่อถึงรายการสุดท้าย (% คือ modulo — เอาเศษหลังหาร ถ้าเศษ 0 กลับไปหาตัวแรก)
       setActiveIndex((prev) => (prev + 1) % results.length);
     } else if (event.key === "ArrowUp") {
       event.preventDefault();
@@ -170,10 +170,10 @@ function ArticleSearch({ className, inputClassName }) {
         }}
         onKeyDown={handleKeyDown}
         placeholder="Search"
-        aria-label="Search articles"
+        aria-label="Search articles" // บอก screen reader ว่าช่องค้นหาเป็นช่องค้นหาบทความ
         aria-expanded={isOpen} // บอก screen reader ว่า dropdown เปิดหรือปิด
-        aria-controls={isOpen ? listboxId : undefined} // เชื่อม input กับ dropdown
-        aria-autocomplete="list"
+        aria-controls={isOpen ? listboxId : undefined} // เชื่อม input กับ dropdown (บอก ID ของกล่อง dropdown)
+        aria-autocomplete="list" // บอก screen reader ว่าช่องค้นหาแบบ autocomplete (ช่องที่มีให้พิมพ์ด้วย และมีลูกศรให้กดเลือกรายการที่หล่นลงมาได้ด้วย)
         role="combobox" // บทบาท accessibility สำหรับช่องค้นหาแบบ autocomplete
         className={cn(
           "rounded-xl border-stone-200 bg-white pr-11 text-stone-950 placeholder:text-stone-400",

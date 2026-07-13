@@ -12,6 +12,8 @@ function AuthFormField({
   error,
   invalid = false,
   autoComplete,
+  disabled = false,
+  readOnly = false,
 }) {
   const isInvalid = invalid || Boolean(error);
 
@@ -28,9 +30,12 @@ function AuthFormField({
         value={value}
         onChange={onChange}
         autoComplete={autoComplete}
+        disabled={disabled}
+        readOnly={readOnly}
         aria-invalid={isInvalid}
         className={cn(
           "h-12 rounded-xl border-stone-300 bg-white px-4 text-base text-stone-950 placeholder:text-stone-400",
+          (disabled || readOnly) && "text-stone-400",
           isInvalid &&
             "border-red-400 text-red-500 focus-visible:border-red-400 focus-visible:ring-red-400/20",
         )}

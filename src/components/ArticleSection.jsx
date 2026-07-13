@@ -101,6 +101,7 @@ function ArticleSection() {
   // [category] = dependency array — ระบุว่า effect นี้ขึ้นกับค่า category
   useEffect(() => {
     // AbortController = ยกเลิก request เก่าเมื่อผู้ใช้เปลี่ยนหมวดเร็ว ๆ (ป้องกัน race condition)
+    // AbortController ไม่ได้ import จากแพ็กเกจ — เป็น Web API ของเบราว์เซอร์ (มีใน Node ใหม่ๆ ด้วย) ใช้ได้เลยเหมือน fetch, localStorage
     const controller = new AbortController();
 
     // async function = function ที่ใช้ await ได้ (รอผลจาก API)
@@ -226,7 +227,7 @@ function ArticleSection() {
 
           {/* Dropdown เลือกหมวดหมู่ — ใช้บนมือถือแทนปุ่มหมวดหมู่แนวนอน */}
           <div className="flex w-full flex-col gap-1">
-            <Label
+            <Label //Label  ส่วนนี้เกี่ยวกับ accessibility ข้อความ "Category" — screen reader
               htmlFor="article-category"
               className="text-sm font-medium text-stone-500"
             >
@@ -234,12 +235,15 @@ function ArticleSection() {
             </Label>
             {/* value = หมวดที่เลือกอยู่ | onValueChange = เรียก setCategory เมื่อผู้ใช้เปลี่ยนหมวด */}
             <Select value={category} onValueChange={setCategory}>
+              {/* select trigger กดแล้วแสดง dropdown เลือกหมวดหมู่ของ SelectContent */}
               <SelectTrigger
                 id="article-category"
                 className="h-12 w-full min-w-0 rounded-xl border-stone-200 bg-white px-4 text-base text-stone-950 data-[size=default]:h-12 [&_svg]:size-5 [&_svg]:text-stone-400"
               >
                 <SelectValue placeholder="Highlight" />
               </SelectTrigger>
+
+              {/* select content แสดง dropdown */}
               <SelectContent
                 position="popper"
                 side="bottom"
@@ -282,7 +286,7 @@ function ArticleSection() {
                         : "text-stone-500 hover:bg-white",
                     )}
                   >
-                    {item.label}
+                    {item.label} {/* แสดงข้อความหมวดหมู่ */}
                   </button>
                 </li>
               );
@@ -296,7 +300,6 @@ function ArticleSection() {
         </div>
 
         {/* --- แสดงผลตามสถานะ: กำลังโหลด / error / รายการบทความ --- */}
-
         {/* skeleton แทนข้อความ Loading... — รักษาความสูงกริดไม่ให้ scroll กระโดด */}
         {isLoading && (
           <ul

@@ -45,7 +45,11 @@ function LoginPage() {
           Log in
         </h1>
 
-        <form className="flex flex-col gap-5" onSubmit={handleSubmit} noValidate>
+        <form
+          className="flex flex-col gap-5"
+          onSubmit={handleSubmit}
+          noValidate
+        >
           <AuthFormField
             id="email"
             label="Email"
