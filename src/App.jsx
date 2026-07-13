@@ -8,6 +8,7 @@ import RegistrationSuccessPage from "@/pages/RegistrationSuccessPage";
 import ProfilePage from "@/pages/ProfilePage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import AdminArticlesPage from "@/pages/admin/AdminArticlesPage";
+import AdminArticleFormPage from "@/pages/admin/AdminArticleFormPage";
 import AdminCategoriesPage from "@/pages/admin/AdminCategoriesPage";
 import AdminNotificationsPage from "@/pages/admin/AdminNotificationsPage";
 import AdminLayout from "@/components/AdminLayout";
@@ -48,6 +49,11 @@ function App() {
       >
         <Route index element={<Navigate to="articles" replace />} />
         <Route path="articles" element={<AdminArticlesPage />} />
+        <Route path="articles/create" element={<AdminArticleFormPage />} />
+        <Route
+          path="articles/:articleId/edit"
+          element={<AdminArticleFormPage />}
+        />
         <Route path="categories" element={<AdminCategoriesPage />} />
         <Route path="notifications" element={<AdminNotificationsPage />} />
       </Route>
