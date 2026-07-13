@@ -1,20 +1,16 @@
 const USERS_KEY = "chomnan_blog_users";
 const SESSION_KEY = "chomnan_blog_session";
 
-const DEFAULT_AVATAR =
-  // "https://images.unsplash.com/photo-1534188756822-c212a6a0a6a0?w=100&h=100&fit=crop&crop=face"
-  "https://avatars.githubusercontent.com/u/159530699?v=4";
+export const DEFAULT_AVATAR = "/default-avatar.svg";
 
 const SEED_USERS = [
   {
     id: "seed-1",
-    name: "Wynnie",
-    username: "Wynnie.cute",
-    email: "Wynnie.cute@gmail.com",
+    name: "Moodeng ja",
+    username: "moodeng.cute",
+    email: "moodeng.cute@gmail.com",
     password: "12345678",
-    avatar:
-      // "https://images.unsplash.com/photo-1591871937573-74dbba515ee4?w=100&h=100&fit=crop"
-      "https://avatars.githubusercontent.com/u/159530699?v=4",
+    avatar: DEFAULT_AVATAR,
   },
 ];
 
@@ -125,4 +121,94 @@ export function saveSession(user) {
 
 export function clearSession() {
   localStorage.removeItem(SESSION_KEY);
+}
+
+function toPublicUser(user) {
+  const { password: _, ...publicUser } = user;
+  return publicUser;
+}
+
+export function updateUserProfile(userId, { name, username, avatar }) {
+  const users = readUsers();
+  const index = users.findIndex((entry) => entry.id === userId);
+
+  if (index === -1) {
+    return { success: false, error: "User not found" };
+  }
+
+  const trimmedName = name.trim();
+  const trimmedUsername = username.trim();
+
+  if (!trimmedName) {
+    return { success: false, error: "Name is required" };
+  }
+
+  if (!trimmedUsername) {
+    return { success: false, error: "Username is required" };
+  }
+
+  const usernameTaken = users.some(
+    (entry) =>
+      entry.id !== userId &&
+      entry.username.toLowerCase() === trimmedUsername.toLowerCase(),
+  );
+
+  if (usernameTaken) {
+    return { success: false, error: "Username is already taken" };
+  }
+
+  users[index] = {
+    ...users[index],
+    name: trimmedName,
+    username: trimmedUsername,
+    avatar: avatar || users[index].avatar || DEFAULT_AVATAR,
+  };
+
+  writeUsers(users);
+  const publicUser = toPublicUser(users[index]);
+  saveSession(publicUser);
+  return { success: true, user: publicUser };
+}
+
+export function resetUserPassword(
+  userId,
+  { currentPassword, newPassword, confirmPassword },
+) {
+  const users = readUsers();
+  const index = users.findIndex((entry) => entry.id === userId);
+
+  if (index === -1) {
+    return { success: false, error: "User not found" };
+  }
+
+  if (!currentPassword) {
+    return { success: false, error: "Current password is required" };
+  }
+
+  if (users[index].password !== currentPassword) {
+    return { success: false, error: "Current password is incorrect" };
+  }
+
+  if (!newPassword) {
+    return { success: false, error: "New password is required" };
+  }
+
+  if (newPassword.length < 6) {
+    return {
+      success: false,
+      error: "New password must be at least 6 characters",
+    };
+  }
+
+  if (newPassword !== confirmPassword) {
+    return { success: false, error: "Passwords do not match" };
+  }
+
+  users[index] = {
+    ...users[index],
+    password: newPassword,
+  };
+
+  writeUsers(users);
+  return { success: true };
 }
