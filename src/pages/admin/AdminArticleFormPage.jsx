@@ -22,13 +22,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/context/AuthContext";
-import { ARTICLE_CATEGORIES, ARTICLE_STATUS } from "@/data/categories";
+import { ARTICLE_STATUS } from "@/data/categories";
 import {
   createAdminArticle,
   deleteAdminArticle,
   getAdminArticleById,
   updateAdminArticle,
 } from "@/lib/adminArticles";
+import { getCategoryNames } from "@/lib/adminCategories";
 
 const INTRODUCTION_MAX = 120;
 
@@ -52,6 +53,7 @@ function AdminArticleFormPage() {
     () => (isEditMode ? getAdminArticleById(articleId) : null),
     [isEditMode, articleId],
   );
+  const categories = getCategoryNames();
 
   const [formData, setFormData] = useState(() => {
     if (existingArticle) {
@@ -307,7 +309,7 @@ function AdminArticleFormPage() {
               <SelectValue placeholder="Select category" />
             </SelectTrigger>
             <SelectContent>
-              {ARTICLE_CATEGORIES.map((category) => (
+              {categories.map((category) => (
                 <SelectItem key={category} value={category}>
                   {category}
                 </SelectItem>

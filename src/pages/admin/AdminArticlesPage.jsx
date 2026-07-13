@@ -19,12 +19,13 @@ import {
   AlertDialogFooter,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ARTICLE_CATEGORIES, ARTICLE_STATUS } from "@/data/categories";
+import { ARTICLE_STATUS } from "@/data/categories";
 import {
   deleteAdminArticle,
   filterAdminArticles,
   getAdminArticles,
 } from "@/lib/adminArticles";
+import { getCategoryNames } from "@/lib/adminCategories";
 import { cn } from "@/lib/utils";
 
 function AdminArticlesPage() {
@@ -34,6 +35,7 @@ function AdminArticlesPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [articleToDelete, setArticleToDelete] = useState(null);
+  const categories = getCategoryNames();
 
   const filteredArticles = useMemo(
     () =>
@@ -119,7 +121,7 @@ function AdminArticlesPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Category</SelectItem>
-              {ARTICLE_CATEGORIES.map((category) => (
+              {categories.map((category) => (
                 <SelectItem key={category} value={category}>
                   {category}
                 </SelectItem>

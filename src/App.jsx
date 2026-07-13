@@ -10,6 +10,7 @@ import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import AdminArticlesPage from "@/pages/admin/AdminArticlesPage";
 import AdminArticleFormPage from "@/pages/admin/AdminArticleFormPage";
 import AdminCategoriesPage from "@/pages/admin/AdminCategoriesPage";
+import AdminCategoryFormPage from "@/pages/admin/AdminCategoryFormPage";
 import AdminNotificationsPage from "@/pages/admin/AdminNotificationsPage";
 import AdminLayout from "@/components/AdminLayout";
 import RequireAuth from "@/components/RequireAuth";
@@ -55,6 +56,11 @@ function App() {
           element={<AdminArticleFormPage />}
         />
         <Route path="categories" element={<AdminCategoriesPage />} />
+        <Route path="categories/create" element={<AdminCategoryFormPage />} />
+        <Route
+          path="categories/:categoryId/edit"
+          element={<AdminCategoryFormPage />}
+        />
         <Route path="notifications" element={<AdminNotificationsPage />} />
       </Route>
       <Route path="/not-found" element={<NotFoundPage />} />

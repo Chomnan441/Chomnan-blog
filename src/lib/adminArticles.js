@@ -1,6 +1,11 @@
 import { ARTICLE_STATUS } from "@/data/categories";
+import { getCategoryNames } from "@/lib/adminCategories";
 
 const ARTICLES_KEY = "chomnan_blog_admin_articles";
+
+function getDefaultCategory() {
+  return getCategoryNames()[0] || "General";
+}
 
 const SEED_ARTICLES = [
   {
@@ -102,7 +107,7 @@ export function createAdminArticle(articleData) {
   const newArticle = {
     id: crypto.randomUUID(),
     title: articleData.title.trim(),
-    category: articleData.category,
+    category: articleData.category || getDefaultCategory(),
     status: articleData.status,
     image: articleData.image || "",
     author: articleData.author.trim(),
@@ -128,7 +133,7 @@ export function updateAdminArticle(articleId, articleData) {
   articles[index] = {
     ...articles[index],
     title: articleData.title.trim(),
-    category: articleData.category,
+    category: articleData.category || getDefaultCategory(),
     status: articleData.status,
     image: articleData.image || "",
     author: articleData.author.trim(),
@@ -153,6 +158,28 @@ export function deleteAdminArticle(articleId) {
   return { success: true };
 }
 
+export function renameArticleCategory(previousName, nextName) {
+  const articles = readArticles();
+  let changed = false;
+
+  const updated = articles.map((article) => {
+    if (article.category !== previousName) {
+      return article;
+    }
+
+    changed = true;
+    return {
+      ...article,
+      category: nextName,
+      updatedAt: new Date().toISOString(),
+    };
+  });
+
+  if (changed) {
+    writeArticles(updated);
+  }
+}
+
 export function filterAdminArticles(
   articles,
   { keyword = "", status = "all", category = "all" } = {},
@@ -165,9 +192,7 @@ export function filterAdminArticles(
       article.title.toLowerCase().includes(normalizedKeyword) ||
       article.description.toLowerCase().includes(normalizedKeyword);
 
-    const matchesStatus =
-      status === "all" || article.status === status;
-
+    const matchesStatus = status === "all" || article.status === status;
     const matchesCategory =
       category === "all" || article.category === category;
 
