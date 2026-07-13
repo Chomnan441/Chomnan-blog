@@ -18,7 +18,7 @@ import logo from "@/assets/logo.svg";
 import logoHover from "@/assets/logo-hoverNew.gif";
 
 function NavBar() {
-  const { user, logout } = useAuth();
+  const { user, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
   // State (useState) — เปิด/ปิด UI
   const [isMenuOpen, setIsMenuOpen] = useState(false); // เมนูมือถือ (hamburger) ของคนที่ยังไม่ล็อกอิน
@@ -209,18 +209,20 @@ function NavBar() {
                     <KeyRound className="size-4 shrink-0" aria-hidden="true" />
                     Reset password
                   </button>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-stone-700 hover:bg-stone-100"
-                    onClick={() => handleMenuNavigate("/admin")}
-                  >
-                    <LayoutDashboard
-                      className="size-4 shrink-0"
-                      aria-hidden="true"
-                    />
-                    Admin panel
-                  </button>
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-stone-700 hover:bg-stone-100"
+                      onClick={() => handleMenuNavigate("/admin/articles")}
+                    >
+                      <LayoutDashboard
+                        className="size-4 shrink-0"
+                        aria-hidden="true"
+                      />
+                      Admin panel
+                    </button>
+                  )}
                   <button
                     type="button"
                     role="menuitem"

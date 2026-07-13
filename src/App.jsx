@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import HomePage from "@/pages/HomePage";
 import ViewPostPage from "@/pages/ViewPostPage";
 import NotFoundPage from "@/pages/NotFoundPage";
@@ -7,8 +7,12 @@ import LoginPage from "@/pages/LoginPage";
 import RegistrationSuccessPage from "@/pages/RegistrationSuccessPage";
 import ProfilePage from "@/pages/ProfilePage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
-import AdminPage from "@/pages/AdminPage";
+import AdminArticlesPage from "@/pages/admin/AdminArticlesPage";
+import AdminCategoriesPage from "@/pages/admin/AdminCategoriesPage";
+import AdminNotificationsPage from "@/pages/admin/AdminNotificationsPage";
+import AdminLayout from "@/components/AdminLayout";
 import RequireAuth from "@/components/RequireAuth";
+import RequireAdmin from "@/components/RequireAdmin";
 
 function App() {
   return (
@@ -37,11 +41,16 @@ function App() {
       <Route
         path="/admin"
         element={
-          <RequireAuth>
-            <AdminPage />
-          </RequireAuth>
+          <RequireAdmin>
+            <AdminLayout />
+          </RequireAdmin>
         }
-      />
+      >
+        <Route index element={<Navigate to="articles" replace />} />
+        <Route path="articles" element={<AdminArticlesPage />} />
+        <Route path="categories" element={<AdminCategoriesPage />} />
+        <Route path="notifications" element={<AdminNotificationsPage />} />
+      </Route>
       <Route path="/not-found" element={<NotFoundPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

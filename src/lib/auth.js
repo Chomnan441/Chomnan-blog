@@ -2,6 +2,8 @@ const USERS_KEY = "chomnan_blog_users";
 const SESSION_KEY = "chomnan_blog_session";
 
 export const DEFAULT_AVATAR = "/default-avatar.svg";
+export const USER_ROLE = "user";
+export const ADMIN_ROLE = "admin";
 
 const SEED_USERS = [
   {
@@ -11,20 +13,69 @@ const SEED_USERS = [
     email: "moodeng.cute@gmail.com",
     password: "12345678",
     avatar: DEFAULT_AVATAR,
+    role: USER_ROLE,
+  },
+  {
+    id: "seed-admin",
+    name: "Chomnan Phokhawatchanan",
+    username: "chomnan.admin",
+    email: "admin@chomnan.blog",
+    password: "admin1234",
+    avatar: DEFAULT_AVATAR,
+    role: ADMIN_ROLE,
   },
 ];
 
-function readUsers() {
-  const stored = localStorage.getItem(USERS_KEY);
-  if (stored) {
-    try {
-      return JSON.parse(stored);
-    } catch {
-      return [...SEED_USERS];
+function normalizeRole(role) {
+  return role === ADMIN_ROLE ? ADMIN_ROLE : USER_ROLE;
+}
+
+function normalizeUser(user) {
+  return {
+    ...user,
+    role: normalizeRole(user.role),
+  };
+}
+
+export function isAdmin(user) {
+  return normalizeRole(user?.role) === ADMIN_ROLE;
+}
+
+function mergeSeedUsers(users) {
+  const merged = users.map(normalizeUser);
+
+  for (const seed of SEED_USERS) {
+    const index = merged.findIndex((user) => user.id === seed.id);
+    if (index === -1) {
+      merged.push(seed);
+    } else {
+      merged[index] = normalizeUser({
+        ...merged[index],
+        role: seed.role,
+      });
     }
   }
-  localStorage.setItem(USERS_KEY, JSON.stringify(SEED_USERS));
-  return [...SEED_USERS];
+
+  return merged;
+}
+
+function readUsers() {
+  const stored = localStorage.getItem(USERS_KEY);
+  let users;
+
+  if (stored) {
+    try {
+      users = JSON.parse(stored);
+    } catch {
+      users = [...SEED_USERS];
+    }
+  } else {
+    users = [...SEED_USERS];
+  }
+
+  const merged = mergeSeedUsers(Array.isArray(users) ? users : [...SEED_USERS]);
+  localStorage.setItem(USERS_KEY, JSON.stringify(merged));
+  return merged;
 }
 
 function writeUsers(users) {
@@ -77,13 +128,13 @@ export function registerUser({ name, username, email, password }) {
     email: email.trim().toLowerCase(),
     password,
     avatar: DEFAULT_AVATAR,
+    role: USER_ROLE,
   };
 
   users.push(newUser);
   writeUsers(users);
 
-  const { password: _, ...publicUser } = newUser;
-  return publicUser;
+  return toPublicUser(newUser);
 }
 
 export function authenticateUser(email, password) {
@@ -98,8 +149,7 @@ export function authenticateUser(email, password) {
     return null;
   }
 
-  const { password: _, ...publicUser } = user;
-  return publicUser;
+  return toPublicUser(user);
 }
 
 export function getStoredSession() {
@@ -109,7 +159,19 @@ export function getStoredSession() {
   }
 
   try {
-    return JSON.parse(stored);
+    const session = JSON.parse(stored);
+    if (!session?.id) {
+      return null;
+    }
+
+    const users = readUsers();
+    const currentUser = users.find((entry) => entry.id === session.id);
+    if (!currentUser) {
+      clearSession();
+      return null;
+    }
+
+    return toPublicUser(currentUser);
   } catch {
     return null;
   }
@@ -124,7 +186,7 @@ export function clearSession() {
 }
 
 function toPublicUser(user) {
-  const { password: _, ...publicUser } = user;
+  const { password: _, ...publicUser } = normalizeUser(user);
   return publicUser;
 }
 
