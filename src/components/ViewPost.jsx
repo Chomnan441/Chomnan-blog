@@ -17,6 +17,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { API_BASE_URL } from "@/lib/api";
+import { getAdminArticleById } from "@/lib/adminArticles";
+import { ARTICLE_STATUS } from "@/data/categories";
 import { formatBlogDate, formatCommentDate } from "@/lib/formatDate";
 
 const DEFAULT_AUTHOR_AVATAR =
@@ -108,9 +110,32 @@ function ViewPost() {
           setComments(FALLBACK_COMMENTS);
         }
       } catch {
-        if (!controller.signal.aborted) {
-          navigate("/not-found", { replace: true });
+        if (controller.signal.aborted) {
+          return;
         }
+
+        const adminArticle = getAdminArticleById(postId);
+        if (
+          adminArticle &&
+          adminArticle.status === ARTICLE_STATUS.PUBLISHED
+        ) {
+          setPost({
+            id: adminArticle.id,
+            title: adminArticle.title,
+            category: adminArticle.category,
+            description: adminArticle.description,
+            content: adminArticle.content,
+            author: adminArticle.author,
+            date: adminArticle.createdAt || adminArticle.updatedAt,
+            image: adminArticle.image,
+            likes: 0,
+          });
+          setLikes(0);
+          setComments(FALLBACK_COMMENTS);
+          return;
+        }
+
+        navigate("/not-found", { replace: true });
       } finally {
         if (!controller.signal.aborted) {
           setIsLoading(false);

@@ -26,17 +26,16 @@ const SEED_ARTICLES = [
   },
   {
     id: "article-2",
-    title:
-      "The Fascinating World of Cats: Why We Love Our Furry Friends",
+    title: "The Secret Language of Cats: Decoding Feline Communication",
     category: "Cat",
     status: ARTICLE_STATUS.PUBLISHED,
     image:
       "https://images.unsplash.com/photo-1450778869180-41d0601e046e?auto=format&fit=crop&w=800&h=533&q=80",
     author: "Thompson P.",
     description:
-      "Cats have captivated human hearts for thousands of years with warmth and mystery.",
+      "Learn how cats communicate through body language, vocal cues, and subtle everyday signals.",
     content:
-      "## Companionship\n\nFrom sunny naps to midnight zooms, cats enrich everyday life.",
+      "## Reading the Signs\n\nCats speak through posture, tail movement, and quiet sounds that often go unnoticed.\n\n## Building Trust\n\nUnderstanding feline communication helps deepen the bond between cats and their people.",
     createdAt: "2024-09-10T10:00:00.000Z",
     updatedAt: "2024-09-10T10:00:00.000Z",
   },
@@ -81,7 +80,30 @@ function readArticles() {
 
   try {
     const parsed = JSON.parse(stored);
-    return Array.isArray(parsed) ? parsed : [...SEED_ARTICLES];
+    if (!Array.isArray(parsed)) {
+      return [...SEED_ARTICLES];
+    }
+
+    // Keep seed article-2 title in sync for existing local data
+    let changed = false;
+    const nextTitle =
+      "The Secret Language of Cats: Decoding Feline Communication";
+    const articles = parsed.map((article) => {
+      if (article.id !== "article-2" || article.title === nextTitle) {
+        return article;
+      }
+
+      changed = true;
+      return {
+        ...article,
+        title: nextTitle,
+      };
+    });
+
+    if (changed) {
+      writeArticles(articles);
+    }
+    return articles;
   } catch {
     return [...SEED_ARTICLES];
   }

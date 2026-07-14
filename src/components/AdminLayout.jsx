@@ -24,7 +24,7 @@ const ADMIN_NAV_LINKS = [
     icon: FolderOpen,
   },
   {
-    to: "/profile",
+    to: "/admin/profile",
     label: "Profile",
     icon: UserRound,
   },
@@ -34,7 +34,7 @@ const ADMIN_NAV_LINKS = [
     icon: Bell,
   },
   {
-    to: "/reset-password",
+    to: "/admin/reset-password",
     label: "Reset password",
     icon: KeyRound,
   },
