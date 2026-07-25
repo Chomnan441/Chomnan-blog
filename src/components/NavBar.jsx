@@ -136,11 +136,13 @@ function NavBar() {
                       role="menuitem"
                       className="flex gap-3 px-4 py-3 hover:bg-stone-50"
                     >
-                      <img
-                        src={notification.avatar}
-                        alt={`${notification.name} avatar`}
-                        className="size-10 shrink-0 rounded-full object-cover"
-                      />
+                      <span className="size-10 shrink-0 overflow-hidden rounded-full bg-stone-200">
+                        <img
+                          src={notification.avatar}
+                          alt={`${notification.name} avatar`}
+                          className="size-full object-cover"
+                        />
+                      </span>
                       <div className="min-w-0">
                         <p className="text-sm text-stone-800">
                           <span className="font-semibold">
@@ -184,31 +186,40 @@ function NavBar() {
                 />
               </button>
 
-              {/* หลังจากกด button โปรไฟล์แสดง dropdown โปรไฟล์ */}
-              {/* profile, reset password, admin panel, logout */}
+              {/* profile / reset password (user เท่านั้น), admin panel (admin), logout */}
               {isProfileOpen && (
                 <div
                   role="menu"
                   className="absolute right-0 z-50 mt-2 w-52 rounded-xl border border-stone-200 bg-white py-1 shadow-lg"
                 >
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-stone-700 hover:bg-stone-100"
-                    onClick={() => handleMenuNavigate("/profile")}
-                  >
-                    <UserRound className="size-4 shrink-0" aria-hidden="true" />
-                    Profile
-                  </button>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-stone-700 hover:bg-stone-100"
-                    onClick={() => handleMenuNavigate("/reset-password")}
-                  >
-                    <KeyRound className="size-4 shrink-0" aria-hidden="true" />
-                    Reset password
-                  </button>
+                  {!isAdmin && (
+                    <>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-stone-700 hover:bg-stone-100"
+                        onClick={() => handleMenuNavigate("/profile")}
+                      >
+                        <UserRound
+                          className="size-4 shrink-0"
+                          aria-hidden="true"
+                        />
+                        Profile
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-stone-700 hover:bg-stone-100"
+                        onClick={() => handleMenuNavigate("/reset-password")}
+                      >
+                        <KeyRound
+                          className="size-4 shrink-0"
+                          aria-hidden="true"
+                        />
+                        Reset password
+                      </button>
+                    </>
+                  )}
                   {isAdmin && (
                     <button
                       type="button"

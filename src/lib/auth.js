@@ -14,6 +14,7 @@ const SEED_USERS = [
     password: "12345678",
     avatar: DEFAULT_AVATAR,
     role: USER_ROLE,
+    bio: "",
   },
   {
     id: "seed-admin",
@@ -23,6 +24,7 @@ const SEED_USERS = [
     password: "admin1234",
     avatar: DEFAULT_AVATAR,
     role: ADMIN_ROLE,
+    bio: "I am a pet enthusiast and freelance writer who loves exploring animal behavior and storytelling.",
   },
 ];
 
@@ -34,6 +36,7 @@ function normalizeUser(user) {
   return {
     ...user,
     role: normalizeRole(user.role),
+    bio: typeof user.bio === "string" ? user.bio : "",
   };
 }
 
@@ -52,6 +55,7 @@ function mergeSeedUsers(users) {
       merged[index] = normalizeUser({
         ...merged[index],
         role: seed.role,
+        bio: merged[index].bio || seed.bio || "",
       });
     }
   }
@@ -129,6 +133,7 @@ export function registerUser({ name, username, email, password }) {
     password,
     avatar: DEFAULT_AVATAR,
     role: USER_ROLE,
+    bio: "",
   };
 
   users.push(newUser);
@@ -190,7 +195,7 @@ function toPublicUser(user) {
   return publicUser;
 }
 
-export function updateUserProfile(userId, { name, username, avatar }) {
+export function updateUserProfile(userId, { name, username, avatar, bio }) {
   const users = readUsers();
   const index = users.findIndex((entry) => entry.id === userId);
 
@@ -200,6 +205,7 @@ export function updateUserProfile(userId, { name, username, avatar }) {
 
   const trimmedName = name.trim();
   const trimmedUsername = username.trim();
+  const trimmedBio = typeof bio === "string" ? bio.trim() : "";
 
   if (!trimmedName) {
     return { success: false, error: "Name is required" };
@@ -207,6 +213,13 @@ export function updateUserProfile(userId, { name, username, avatar }) {
 
   if (!trimmedUsername) {
     return { success: false, error: "Username is required" };
+  }
+
+  if (trimmedBio.length > 120) {
+    return {
+      success: false,
+      error: "Bio must be at most 120 characters",
+    };
   }
 
   const usernameTaken = users.some(
@@ -224,6 +237,7 @@ export function updateUserProfile(userId, { name, username, avatar }) {
     name: trimmedName,
     username: trimmedUsername,
     avatar: avatar || users[index].avatar || DEFAULT_AVATAR,
+    bio: trimmedBio,
   };
 
   writeUsers(users);

@@ -11,7 +11,9 @@ import AdminArticlesPage from "@/pages/admin/AdminArticlesPage";
 import AdminArticleFormPage from "@/pages/admin/AdminArticleFormPage";
 import AdminCategoriesPage from "@/pages/admin/AdminCategoriesPage";
 import AdminCategoryFormPage from "@/pages/admin/AdminCategoryFormPage";
+import AdminProfilePage from "@/pages/admin/AdminProfilePage";
 import AdminNotificationsPage from "@/pages/admin/AdminNotificationsPage";
+import AdminResetPasswordPage from "@/pages/admin/AdminResetPasswordPage";
 import AdminLayout from "@/components/AdminLayout";
 import RequireAuth from "@/components/RequireAuth";
 import RequireAdmin from "@/components/RequireAdmin";
@@ -61,7 +63,9 @@ function App() {
           path="categories/:categoryId/edit"
           element={<AdminCategoryFormPage />}
         />
+        <Route path="profile" element={<AdminProfilePage />} />
         <Route path="notifications" element={<AdminNotificationsPage />} />
+        <Route path="reset-password" element={<AdminResetPasswordPage />} />
       </Route>
       <Route path="/not-found" element={<NotFoundPage />} />
       <Route path="*" element={<NotFoundPage />} />
