@@ -6,7 +6,6 @@ import {
   useState,
 } from "react";
 import {
-  authenticateUser,
   clearSession,
   getStoredSession,
   isAdmin as checkIsAdmin,
@@ -16,22 +15,23 @@ import {
   updateUserProfile,
   validateSignUpFields,
 } from "@/lib/auth";
+import { loginWithApi, logoutApiSession } from "@/lib/authApi";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => getStoredSession());
 
-  const login = useCallback((email, password) => {
-    const authenticatedUser = authenticateUser(email, password);
-    // useCallback ไม่ได้เปลี่ยนพฤติกรรมการ login — แค่ทำให้ reference ของ login นิ่ง เพื่อลด re-render ที่ไม่จำเป็นใน Context
-    if (!authenticatedUser) {
+  const login = useCallback(async (email, password) => {
+    try {
+      const authenticatedUser = await loginWithApi(email, password);
+      setUser(authenticatedUser);
+      saveSession(authenticatedUser);
+      return true;
+    } catch {
+      logoutApiSession();
       return false;
     }
-
-    setUser(authenticatedUser);
-    saveSession(authenticatedUser);
-    return true;
   }, []);
 
   const signUp = useCallback((formData) => {
@@ -53,6 +53,7 @@ export function AuthProvider({ children }) {
   const logout = useCallback(() => {
     setUser(null);
     clearSession();
+    logoutApiSession();
   }, []);
 
   const updateProfile = useCallback(

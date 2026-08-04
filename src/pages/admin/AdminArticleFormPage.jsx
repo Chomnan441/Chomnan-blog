@@ -24,7 +24,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { ARTICLE_STATUS } from "@/data/categories";
 import {
-  createAdminArticle,
+  createAdminArticleWithUpload,
   deleteAdminArticle,
   getAdminArticleById,
   updateAdminArticle,
@@ -72,8 +72,19 @@ function AdminArticleFormPage() {
       author: user?.name || "",
     };
   });
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState("");
   const [errors, setErrors] = useState({});
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (imagePreviewUrl) {
+        URL.revokeObjectURL(imagePreviewUrl);
+      }
+    };
+  }, [imagePreviewUrl]);
 
   useEffect(() => {
     if (!isEditMode) {
@@ -120,21 +131,38 @@ function AdminArticleFormPage() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
       toast.error("Invalid file", {
-        description: "Please upload an image file",
+        description: "Please upload a JPEG, PNG, GIF, or WebP image",
       });
+      event.target.value = "";
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      setFormData((prev) => ({
-        ...prev,
-        image: typeof reader.result === "string" ? reader.result : prev.image,
-      }));
-    };
-    reader.readAsDataURL(file);
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast.error("File too large", {
+        description: "Image must be 5MB or smaller",
+      });
+      event.target.value = "";
+      return;
+    }
+
+    if (imagePreviewUrl) {
+      URL.revokeObjectURL(imagePreviewUrl);
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    setImageFile(file);
+    setImagePreviewUrl(previewUrl);
+    setFormData((prev) => ({ ...prev, image: previewUrl }));
     event.target.value = "";
   }
 
@@ -143,6 +171,19 @@ function AdminArticleFormPage() {
 
     if (!formData.title.trim()) {
       nextErrors.title = "Title is required";
+    }
+
+    // Create ผ่าน API บังคับฟิลด์ครบ (backend validate)
+    if (!isEditMode) {
+      if (!formData.category) {
+        nextErrors.category = "Category is required";
+      }
+      if (!formData.description.trim()) {
+        nextErrors.description = "Introduction is required";
+      }
+      if (!formData.content.trim()) {
+        nextErrors.content = "Content is required";
+      }
     }
 
     if (status === ARTICLE_STATUS.PUBLISHED) {
@@ -168,17 +209,17 @@ function AdminArticleFormPage() {
     return Object.keys(nextErrors).length === 0;
   }
 
-  function saveArticle(status) {
+  async function saveArticle(status) {
     if (!validateForm(status)) {
       return;
     }
 
-    const payload = {
-      ...formData,
-      status,
-    };
-
     if (isEditMode) {
+      const payload = {
+        ...formData,
+        status,
+      };
+
       const result = updateAdminArticle(articleId, payload);
       if (!result.success) {
         toast.error("Could not save article", {
@@ -196,8 +237,35 @@ function AdminArticleFormPage() {
           description: "Your article has been successfully published.",
         });
       }
-    } else {
-      createAdminArticle(payload);
+
+      navigate("/admin/articles");
+      return;
+    }
+
+    if (!imageFile) {
+      toast.error("Thumbnail required", {
+        description: "Please upload a thumbnail image before saving.",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const result = await createAdminArticleWithUpload({
+        title: formData.title,
+        category: formData.category,
+        description: formData.description,
+        content: formData.content,
+        status,
+        imageFile,
+      });
+
+      if (!result.success) {
+        toast.error("Could not create article", {
+          description: result.error,
+        });
+        return;
+      }
 
       if (status === ARTICLE_STATUS.DRAFT) {
         toast.success("Create article and saved as draft", {
@@ -208,9 +276,11 @@ function AdminArticleFormPage() {
           description: "Your article has been successfully published.",
         });
       }
-    }
 
-    navigate("/admin/articles");
+      navigate("/admin/articles");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   function handleConfirmDelete() {
@@ -241,6 +311,7 @@ function AdminArticleFormPage() {
             variant="outline"
             className="h-11 rounded-full border-stone-950 bg-white px-6 text-base font-medium text-stone-950 hover:bg-stone-100"
             onClick={() => saveArticle(ARTICLE_STATUS.DRAFT)}
+            disabled={isLoading}
           >
             Save as draft
           </Button>
@@ -248,6 +319,7 @@ function AdminArticleFormPage() {
             type="button"
             className="h-11 rounded-full bg-stone-950 px-6 text-base font-medium text-white hover:bg-stone-800"
             onClick={() => saveArticle(ARTICLE_STATUS.PUBLISHED)}
+            disabled={isLoading}
           >
             {isEditMode ? "Save" : "Save and publish"}
           </Button>
