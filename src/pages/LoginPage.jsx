@@ -22,10 +22,10 @@ function LoginPage() {
     setHasError(false);
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
 
-    const success = login(formData.email, formData.password);
+    const success = await login(formData.email, formData.password);
 
     if (success) {
       navigate("/");

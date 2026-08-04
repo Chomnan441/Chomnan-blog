@@ -1,7 +1,29 @@
 import { ARTICLE_STATUS } from "@/data/categories";
 import { getCategoryNames } from "@/lib/adminCategories";
+import { api } from "@/lib/api";
 
 const ARTICLES_KEY = "chomnan_blog_admin_articles";
+
+/** ชื่อหมวดใน UI → id ในตาราง categories */
+const CATEGORY_NAME_TO_ID = {
+  Cat: 1,
+  Inspiration: 2,
+  General: 3,
+};
+
+/** สถานะใน UI → id ในตาราง statuses (DB ใช้ชื่อ publish) */
+const STATUS_TO_ID = {
+  [ARTICLE_STATUS.DRAFT]: 1,
+  [ARTICLE_STATUS.PUBLISHED]: 2,
+};
+
+export function getCategoryIdByName(categoryName) {
+  return CATEGORY_NAME_TO_ID[categoryName] ?? null;
+}
+
+export function getStatusId(status) {
+  return STATUS_TO_ID[status] ?? null;
+}
 
 function getDefaultCategory() {
   return getCategoryNames()[0] || "General";
@@ -142,6 +164,55 @@ export function createAdminArticle(articleData) {
   articles.unshift(newArticle);
   writeArticles(articles);
   return newArticle;
+}
+
+/** สร้างโพสต์ผ่าน Backend + อัปโหลดรูปไป Supabase Storage */
+export async function createAdminArticleWithUpload({
+  title,
+  category,
+  description,
+  content,
+  status,
+  imageFile,
+}) {
+  const categoryId = getCategoryIdByName(category);
+  const statusId = getStatusId(status);
+
+  if (!categoryId) {
+    return { success: false, error: "Invalid category" };
+  }
+
+  if (!statusId) {
+    return { success: false, error: "Invalid status" };
+  }
+
+  if (!imageFile) {
+    return { success: false, error: "Image file is required" };
+  }
+
+  const formData = new FormData();
+  formData.append("title", title.trim());
+  formData.append("category_id", String(categoryId));
+  formData.append("description", description.trim());
+  formData.append("content", content.trim());
+  formData.append("status_id", String(statusId));
+  formData.append("imageFile", imageFile);
+
+  try {
+    const response = await api.post("/posts", formData);
+    return {
+      success: true,
+      message: response.data?.message,
+      image: response.data?.image,
+    };
+  } catch (error) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      "Failed to create post";
+    return { success: false, error: message };
+  }
 }
 
 export function updateAdminArticle(articleId, articleData) {
