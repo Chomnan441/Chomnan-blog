@@ -66,7 +66,7 @@ function AdminProfilePage() {
     event.target.value = "";
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
 
     const nextErrors = {};
@@ -85,7 +85,7 @@ function AdminProfilePage() {
       return;
     }
 
-    const result = updateProfile({
+    const result = await updateProfile({
       name: formData.name,
       username: formData.username,
       avatar: formData.avatar || DEFAULT_AVATAR,

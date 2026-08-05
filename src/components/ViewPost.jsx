@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
-import axios from "axios";
 import {
   Copy,
   Loader2,
@@ -16,42 +15,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { API_BASE_URL } from "@/lib/api";
-import { getAdminArticleById } from "@/lib/adminArticles";
-import { ARTICLE_STATUS } from "@/data/categories";
+import { useAuth } from "@/context/AuthContext";
+import { api } from "@/lib/api";
+import { DEFAULT_AVATAR } from "@/lib/auth";
 import { formatBlogDate, formatCommentDate } from "@/lib/formatDate";
 
 const DEFAULT_AUTHOR_AVATAR =
   "https://res.cloudinary.com/dcbpjtd1r/image/upload/c_fill,w_80,h_80,g_face,r_max/v1728449784/my-blog-post/xgfy0xnvyemkklcqodkg.jpg";
-
-const FALLBACK_COMMENTS = [
-  {
-    id: 1,
-    name: "Jacob Lash",
-    image: "https://i.pravatar.cc/150?img=12",
-    comment_text:
-      "I loved this article! It really explains why my cat is so independent yet loving. The purring section was super interesting.",
-    created_at: "2024-09-12T18:30:00.000Z",
-  },
-  {
-    id: 2,
-    name: "Ahri",
-    image: "https://i.pravatar.cc/150?img=47",
-    comment_text:
-      "Such a great read! I've always wondered why my cat slow blinks at me—now I know it's her way of showing trust!",
-    created_at: "2024-09-12T14:15:00.000Z",
-  },
-  {
-    id: 3,
-    name: "Mimi mama",
-    image: "https://i.pravatar.cc/150?img=32",
-    comment_text:
-      "This article perfectly captures why cats make such amazing pets. I had no idea their purring could help with healing. Fascinating stuff!",
-    created_at: "2024-09-12T10:00:00.000Z",
-  },
-];
-
-const IS_LOGGED_IN = false;
 
 function FacebookIcon({ className }) {
   return (
@@ -77,9 +47,22 @@ function TwitterIcon({ className }) {
   );
 }
 
+function mapComment(row) {
+  return {
+    id: row.id,
+    name: row.name || "Anonymous",
+    image: row.image || DEFAULT_AVATAR,
+    comment_text: row.comment_text || "",
+    created_at: row.created_at,
+  };
+}
+
 function ViewPost() {
   const { postId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isLoggedIn = Boolean(user);
+
   const [post, setPost] = useState(null);
   const [likes, setLikes] = useState(0);
   const [comments, setComments] = useState([]);
@@ -93,45 +76,27 @@ function ViewPost() {
       setIsLoading(true);
 
       try {
-        const { data } = await axios.get(`${API_BASE_URL}/posts/${postId}`, {
+        const { data } = await api.get(`/posts/${postId}`, {
           signal: controller.signal,
         });
 
         setPost(data);
-        setLikes(data.likes ?? 0);
+        setLikes(data.likes_count ?? data.likes ?? 0);
 
         try {
-          const commentsResponse = await axios.get(
-            `${API_BASE_URL}/posts/${postId}/comments`,
-            { signal: controller.signal },
-          );
-          setComments(commentsResponse.data);
+          const commentsResponse = await api.get(`/posts/${postId}/comments`, {
+            signal: controller.signal,
+          });
+          const rows = Array.isArray(commentsResponse.data)
+            ? commentsResponse.data
+            : [];
+          setComments(rows.map(mapComment));
         } catch {
-          setComments(FALLBACK_COMMENTS);
+          // ถ้าโหลดคอมเมนต์ไม่ได้ ยังแสดงบทความได้ — แค่รายการว่าง
+          setComments([]);
         }
       } catch {
         if (controller.signal.aborted) {
-          return;
-        }
-
-        const adminArticle = getAdminArticleById(postId);
-        if (
-          adminArticle &&
-          adminArticle.status === ARTICLE_STATUS.PUBLISHED
-        ) {
-          setPost({
-            id: adminArticle.id,
-            title: adminArticle.title,
-            category: adminArticle.category,
-            description: adminArticle.description,
-            content: adminArticle.content,
-            author: adminArticle.author,
-            date: adminArticle.createdAt || adminArticle.updatedAt,
-            image: adminArticle.image,
-            likes: 0,
-          });
-          setLikes(0);
-          setComments(FALLBACK_COMMENTS);
           return;
         }
 
@@ -163,6 +128,15 @@ function ViewPost() {
         description: "Please copy the link manually from your browser.",
       });
     }
+  }
+
+  async function handleCreateComment(commentText) {
+    const { data } = await api.post(`/posts/${postId}/comments`, {
+      comment_text: commentText,
+    });
+    const created = mapComment(data);
+    setComments((prev) => [created, ...prev]);
+    return created;
   }
 
   if (isLoading) {
@@ -225,7 +199,24 @@ function ViewPost() {
         >
           <button
             type="button"
-            onClick={openLoginDialog}
+            onClick={async () => {
+              if (!isLoggedIn) {
+                openLoginDialog();
+                return;
+              }
+
+              try {
+                const { data } = await api.post(`/posts/${postId}/likes`);
+                setLikes(data.likes_count ?? likes);
+              } catch (error) {
+                toast.error("Could not update like", {
+                  description:
+                    error.response?.data?.message ||
+                    error.response?.data?.error ||
+                    error.message,
+                });
+              }
+            }}
             className="inline-flex items-center gap-2 rounded-full border border-stone-950 bg-white px-5 py-2.5 text-sm font-medium text-stone-950 transition-colors hover:bg-stone-50"
           >
             <SmilePlus className="size-4" aria-hidden="true" />
@@ -282,7 +273,9 @@ function ViewPost() {
 
         <CommentSection
           comments={comments}
+          isLoggedIn={isLoggedIn}
           onRequireLogin={openLoginDialog}
+          onCreateComment={handleCreateComment}
         />
       </article>
 
@@ -297,12 +290,12 @@ function AuthorBio({ author }) {
       <div className="flex items-center gap-3">
         <img
           src={DEFAULT_AUTHOR_AVATAR}
-          alt={`${author} profile`}
+          alt={`${author || "Author"} profile`}
           className="size-12 rounded-full object-cover"
         />
         <div>
           <p className="text-sm text-stone-500">Author</p>
-          <p className="font-bold text-stone-950">{author}</p>
+          <p className="font-bold text-stone-950">{author || "Unknown"}</p>
         </div>
       </div>
       <p className="mt-4 text-sm leading-relaxed text-stone-600">
@@ -318,20 +311,26 @@ function AuthorBio({ author }) {
   );
 }
 
-function CommentSection({ comments, onRequireLogin }) {
+function CommentSection({
+  comments,
+  isLoggedIn,
+  onRequireLogin,
+  onCreateComment,
+}) {
   const [commentText, setCommentText] = useState("");
   const [showError, setShowError] = useState(false);
+  const [isSending, setIsSending] = useState(false);
 
   function handleFocus() {
-    if (!IS_LOGGED_IN) {
+    if (!isLoggedIn) {
       onRequireLogin();
     }
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
 
-    if (!IS_LOGGED_IN) {
+    if (!isLoggedIn) {
       onRequireLogin();
       return;
     }
@@ -342,7 +341,24 @@ function CommentSection({ comments, onRequireLogin }) {
     }
 
     setShowError(false);
-    setCommentText("");
+    setIsSending(true);
+
+    try {
+      await onCreateComment(commentText.trim());
+      setCommentText("");
+      toast.success("Comment posted");
+    } catch (error) {
+      const message =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        "Failed to post comment";
+      toast.error("Could not post comment", {
+        description: message,
+      });
+    } finally {
+      setIsSending(false);
+    }
   }
 
   return (
@@ -361,6 +377,7 @@ function CommentSection({ comments, onRequireLogin }) {
           }}
           placeholder="What are your thoughts?"
           className="mt-2 min-h-28 rounded-xl border-stone-200 bg-white px-4 py-3 text-base text-stone-950"
+          disabled={isSending}
         />
         {showError && (
           <p className="mt-2 text-sm text-red-600" role="alert">
@@ -371,42 +388,49 @@ function CommentSection({ comments, onRequireLogin }) {
           <Button
             type="submit"
             className="h-11 rounded-full bg-stone-950 px-8 text-base font-medium text-white hover:bg-stone-800"
+            disabled={isSending}
           >
-            Send
+            {isSending ? "Sending..." : "Send"}
           </Button>
         </div>
       </form>
 
-      <ul className="mt-10">
-        {comments.map((comment, index) => (
-          <li key={comment.id ?? index}>
-            <article className="flex gap-4 py-6">
-              <img
-                src={comment.image ?? DEFAULT_AUTHOR_AVATAR}
-                alt={`${comment.name} profile`}
-                className="size-10 shrink-0 rounded-full object-cover"
-              />
-              <div className="min-w-0 flex-1">
-                <header className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                  <p className="font-semibold text-stone-950">{comment.name}</p>
-                  <time
-                    dateTime={comment.created_at}
-                    className="text-sm text-stone-500"
-                  >
-                    {formatCommentDate(comment.created_at)}
-                  </time>
-                </header>
-                <p className="mt-2 text-sm leading-relaxed text-stone-700">
-                  {comment.comment_text}
-                </p>
-              </div>
-            </article>
-            {index < comments.length - 1 && (
-              <hr className="border-stone-200" />
-            )}
-          </li>
-        ))}
-      </ul>
+      {comments.length === 0 ? (
+        <p className="mt-10 text-center text-sm text-stone-500">
+          No comments yet. Be the first to share your thoughts.
+        </p>
+      ) : (
+        <ul className="mt-10">
+          {comments.map((comment, index) => (
+            <li key={comment.id ?? index}>
+              <article className="flex gap-4 py-6">
+                <img
+                  src={comment.image || DEFAULT_AVATAR}
+                  alt={`${comment.name} profile`}
+                  className="size-10 shrink-0 rounded-full object-cover"
+                />
+                <div className="min-w-0 flex-1">
+                  <header className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                    <p className="font-semibold text-stone-950">{comment.name}</p>
+                    <time
+                      dateTime={comment.created_at}
+                      className="text-sm text-stone-500"
+                    >
+                      {formatCommentDate(comment.created_at)}
+                    </time>
+                  </header>
+                  <p className="mt-2 text-sm leading-relaxed text-stone-700">
+                    {comment.comment_text}
+                  </p>
+                </div>
+              </article>
+              {index < comments.length - 1 && (
+                <hr className="border-stone-200" />
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }
@@ -432,17 +456,21 @@ function LoginPromptDialog({ open, onOpenChange }) {
           <Button
             type="button"
             className="h-12 w-full max-w-xs rounded-full bg-stone-950 text-base font-medium text-white hover:bg-stone-800"
+            asChild
           >
-            Create account
+            <Link to="/sign-up" onClick={() => onOpenChange(false)}>
+              Create account
+            </Link>
           </Button>
           <p className="text-sm text-stone-600">
             Already have an account?{" "}
-            <button
-              type="button"
+            <Link
+              to="/login"
+              onClick={() => onOpenChange(false)}
               className="font-semibold text-stone-950 underline underline-offset-2"
             >
               Log in
-            </button>
+            </Link>
           </p>
         </div>
       </AlertDialogContent>

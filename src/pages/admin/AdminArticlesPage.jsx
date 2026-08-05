@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Pencil, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
@@ -22,20 +22,58 @@ import {
 import { ARTICLE_STATUS } from "@/data/categories";
 import {
   deleteAdminArticle,
+  fetchAdminArticles,
+  fetchPostLookups,
   filterAdminArticles,
-  getAdminArticles,
 } from "@/lib/adminArticles";
-import { getCategoryNames } from "@/lib/adminCategories";
 import { cn } from "@/lib/utils";
 
 function AdminArticlesPage() {
   const navigate = useNavigate();
-  const [articles, setArticles] = useState(() => getAdminArticles());
+  const [articles, setArticles] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [keyword, setKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [articleToDelete, setArticleToDelete] = useState(null);
-  const categories = getCategoryNames();
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [categories, setCategories] = useState([]);
+
+  async function loadArticles() {
+    setIsLoading(true);
+    const result = await fetchAdminArticles();
+
+    if (!result.success) {
+      toast.error("Could not load articles", {
+        description: result.error,
+      });
+      setArticles([]);
+    } else {
+      setArticles(result.articles);
+    }
+
+    setIsLoading(false);
+  }
+
+  useEffect(() => {
+    loadArticles();
+
+    let cancelled = false;
+    async function loadCategories() {
+      try {
+        const lookups = await fetchPostLookups();
+        if (!cancelled) {
+          setCategories(lookups.categories.map((item) => item.name));
+        }
+      } catch {
+        if (!cancelled) setCategories([]);
+      }
+    }
+    loadCategories();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const filteredArticles = useMemo(
     () =>
@@ -47,10 +85,13 @@ function AdminArticlesPage() {
     [articles, keyword, statusFilter, categoryFilter],
   );
 
-  function handleConfirmDelete() {
-    if (!articleToDelete) return;
+  async function handleConfirmDelete() {
+    if (!articleToDelete || isDeleting) return;
 
-    const result = deleteAdminArticle(articleToDelete.id);
+    setIsDeleting(true);
+    const result = await deleteAdminArticle(articleToDelete.id);
+    setIsDeleting(false);
+
     if (!result.success) {
       toast.error("Could not delete article", {
         description: result.error,
@@ -58,11 +99,11 @@ function AdminArticlesPage() {
       return;
     }
 
-    setArticles(getAdminArticles());
     setArticleToDelete(null);
     toast.success("Article deleted", {
       description: "The article has been removed successfully.",
     });
+    await loadArticles();
   }
 
   return (
@@ -144,7 +185,16 @@ function AdminArticlesPage() {
             </tr>
           </thead>
           <tbody>
-            {filteredArticles.length === 0 ? (
+            {isLoading ? (
+              <tr>
+                <td
+                  colSpan={4}
+                  className="px-4 py-10 text-center text-sm text-stone-500"
+                >
+                  Loading articles...
+                </td>
+              </tr>
+            ) : filteredArticles.length === 0 ? (
               <tr>
                 <td
                   colSpan={4}
@@ -247,8 +297,9 @@ function AdminArticlesPage() {
               type="button"
               className="h-11 rounded-full bg-stone-950 px-8 text-base font-medium text-white hover:bg-stone-800"
               onClick={handleConfirmDelete}
+              disabled={isDeleting}
             >
-              Delete
+              {isDeleting ? "Deleting..." : "Delete"}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

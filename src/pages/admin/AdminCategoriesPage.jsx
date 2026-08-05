@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Pencil, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
@@ -14,25 +14,50 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   deleteAdminCategory,
+  fetchAdminCategories,
   filterAdminCategories,
-  getAdminCategories,
 } from "@/lib/adminCategories";
 
 function AdminCategoriesPage() {
   const navigate = useNavigate();
-  const [categories, setCategories] = useState(() => getAdminCategories());
+  const [categories, setCategories] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [keyword, setKeyword] = useState("");
   const [categoryToDelete, setCategoryToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  async function loadCategories() {
+    setIsLoading(true);
+    const result = await fetchAdminCategories();
+
+    if (!result.success) {
+      toast.error("Could not load categories", {
+        description: result.error,
+      });
+      setCategories([]);
+    } else {
+      setCategories(result.categories);
+    }
+
+    setIsLoading(false);
+  }
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
 
   const filteredCategories = useMemo(
     () => filterAdminCategories(categories, keyword),
     [categories, keyword],
   );
 
-  function handleConfirmDelete() {
-    if (!categoryToDelete) return;
+  async function handleConfirmDelete() {
+    if (!categoryToDelete || isDeleting) return;
 
-    const result = deleteAdminCategory(categoryToDelete.id);
+    setIsDeleting(true);
+    const result = await deleteAdminCategory(categoryToDelete.id);
+    setIsDeleting(false);
+
     if (!result.success) {
       toast.error("Could not delete category", {
         description: result.error,
@@ -40,11 +65,11 @@ function AdminCategoriesPage() {
       return;
     }
 
-    setCategories(getAdminCategories());
     setCategoryToDelete(null);
     toast.success("Category deleted", {
       description: "The category has been removed successfully.",
     });
+    await loadCategories();
   }
 
   return (
@@ -87,7 +112,16 @@ function AdminCategoriesPage() {
             </tr>
           </thead>
           <tbody>
-            {filteredCategories.length === 0 ? (
+            {isLoading ? (
+              <tr>
+                <td
+                  colSpan={2}
+                  className="px-4 py-10 text-center text-sm text-stone-500"
+                >
+                  Loading categories...
+                </td>
+              </tr>
+            ) : filteredCategories.length === 0 ? (
               <tr>
                 <td
                   colSpan={2}
@@ -165,8 +199,9 @@ function AdminCategoriesPage() {
               type="button"
               className="h-11 rounded-full bg-stone-950 px-8 text-base font-medium text-white hover:bg-stone-800"
               onClick={handleConfirmDelete}
+              disabled={isDeleting}
             >
-              Delete
+              {isDeleting ? "Deleting..." : "Delete"}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

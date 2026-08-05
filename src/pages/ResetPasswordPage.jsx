@@ -61,8 +61,8 @@ function ResetPasswordPage() {
     setIsConfirmOpen(true);
   }
 
-  function handleConfirmReset() {
-    const result = resetPassword(formData);
+  async function handleConfirmReset() {
+    const result = await resetPassword(formData);
 
     if (!result.success) {
       setIsConfirmOpen(false);

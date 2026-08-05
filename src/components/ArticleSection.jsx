@@ -26,6 +26,7 @@ import { formatBlogDate } from "@/lib/formatDate";
 import { cn } from "@/lib/utils";
 
 import { API_BASE_URL } from "@/lib/api";
+import { fetchCategoryNames } from "@/lib/adminCategories";
 
 // จำนวนบทความที่โหลดต่อ 1 ครั้ง — ใช้กับ query params page และ limit ของ API
 const ARTICLES_PER_PAGE = 6;
@@ -38,15 +39,7 @@ const ARTICLE_GRID_CLASS =
 const DEFAULT_AUTHOR_AVATAR =
   "https://res.cloudinary.com/dcbpjtd1r/image/upload/c_fill,w_80,h_80,g_face,r_max/v1728449784/my-blog-post/xgfy0xnvyemkklcqodkg.jpg";
 
-// รายการหมวดหมู่บทความ
-// value = ค่าภายในใน state (ใช้เปรียบเทียบ/เก็บใน useState)
-// label = ข้อความที่แสดงบนหน้าจอ และส่งให้ API เป็นพารามิเตอร์ category
-const CATEGORIES = [
-  { value: "highlight", label: "Highlight" },
-  { value: "cat", label: "Cat" },
-  { value: "inspiration", label: "Inspiration" },
-  { value: "general", label: "General" },
-];
+const HIGHLIGHT_OPTION = { value: "highlight", label: "Highlight" };
 
 // mapPostToArticle = แปลงข้อมูลจาก API ให้ตรงกับ props ที่ ArticleCard ต้องการ
 // API ใช้ชื่อฟิลด์ต่างจาก component เช่น description แทน excerpt
@@ -65,17 +58,12 @@ function mapPostToArticle(post) {
   };
 }
 
-// getCategoryParam = แปลงค่าหมวดหมู่ใน state เป็นพารามิเตอร์ส่งให้ API
-// Highlight = แสดงทุกหมวด → ไม่ส่ง category (return undefined)
-// หมวดอื่น → ส่ง label เช่น "Cat", "Inspiration"
+// Highlight = ไม่ส่ง category / หมวดอื่น = ส่งชื่อหมวดตรงๆ ให้ API
 function getCategoryParam(categoryValue) {
   if (categoryValue === "highlight") {
     return undefined;
   }
-
-  // .find() ค้นหารายการใน CATEGORIES ที่ value ตรงกัน
-  // ?.label = optional chaining — ถ้าไม่เจอจะได้ undefined แทน error
-  return CATEGORIES.find((item) => item.value === categoryValue)?.label;
+  return categoryValue;
 }
 
 // ArticleSection = component หลักของส่วนนี้
@@ -84,6 +72,8 @@ function ArticleSection() {
 
   // category = หมวดหมู่ที่เลือกอยู่ — ค่าเริ่มต้น "highlight" (แสดงทุกบทความ)
   const [category, setCategory] = useState("highlight");
+  // ตัวเลือกหมวด: Highlight + รายการจาก DB
+  const [categoryOptions, setCategoryOptions] = useState([HIGHLIGHT_OPTION]);
   // articles = รายการบทความที่ดึงมาจาก API แล้ว map เรียบร้อย
   const [articles, setArticles] = useState([]);
   // page = หน้าปัจจุบันของ pagination — เริ่มที่ 1 แล้วเพิ่มทีละ 1 เมื่อกด View more
@@ -96,6 +86,31 @@ function ArticleSection() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   // error = ข้อความ error เมื่อเรียก API ไม่สำเร็จ (null = ไม่มี error)
   const [error, setError] = useState(null);
+
+  // โหลดชื่อหมวดจาก API ครั้งเดียวตอนเปิดหน้า
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCategories() {
+      const result = await fetchCategoryNames();
+      if (cancelled) return;
+
+      if (!result.success) {
+        setCategoryOptions([HIGHLIGHT_OPTION]);
+        return;
+      }
+
+      setCategoryOptions([
+        HIGHLIGHT_OPTION,
+        ...result.names.map((name) => ({ value: name, label: name })),
+      ]);
+    }
+
+    loadCategories();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // useEffect ทำงานเมื่อ component mount ครั้งแรก และเมื่อ category เปลี่ยน
   // [category] = dependency array — ระบุว่า effect นี้ขึ้นกับค่า category
@@ -251,8 +266,7 @@ function ArticleSection() {
                 align="start"
                 className="w-(--radix-select-trigger-width) rounded-xl border-stone-200 bg-white shadow-md"
               >
-                {/* .map() วนลูปสร้างตัวเลือกจาก CATEGORIES */}
-                {CATEGORIES.map((item) => (
+                {categoryOptions.map((item) => (
                   <SelectItem key={item.value} value={item.value}>
                     {item.label}
                   </SelectItem>
@@ -268,7 +282,7 @@ function ArticleSection() {
             className="flex flex-wrap items-center gap-2"
             aria-label="Article categories"
           >
-            {CATEGORIES.map((item) => {
+            {categoryOptions.map((item) => {
               // isActive = หมวดนี้ถูกเลือกอยู่หรือไม่
               const isActive = category === item.value;
 
