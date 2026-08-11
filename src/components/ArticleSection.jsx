@@ -26,6 +26,7 @@ import { formatBlogDate } from "@/lib/formatDate";
 import { cn } from "@/lib/utils";
 
 import { API_BASE_URL } from "@/lib/api";
+import { DEFAULT_AVATAR } from "@/lib/auth";
 import { fetchCategoryNames } from "@/lib/adminCategories";
 
 // จำนวนบทความที่โหลดต่อ 1 ครั้ง — ใช้กับ query params page และ limit ของ API
@@ -35,26 +36,21 @@ const ARTICLES_PER_PAGE = 6;
 const ARTICLE_GRID_CLASS =
   "mt-10 grid grid-cols-1 gap-10 md:grid-cols-2 md:gap-x-8 md:gap-y-12";
 
-// รูปโปรไฟล์ผู้เขียนเริ่มต้น — API ไม่ส่ง authorAvatar มา จึงใช้ URL นี้แทน
-const DEFAULT_AUTHOR_AVATAR =
-  "https://res.cloudinary.com/dcbpjtd1r/image/upload/c_fill,w_80,h_80,g_face,r_max/v1728449784/my-blog-post/xgfy0xnvyemkklcqodkg.jpg";
-
 const HIGHLIGHT_OPTION = { value: "highlight", label: "Highlight" };
 
 // mapPostToArticle = แปลงข้อมูลจาก API ให้ตรงกับ props ที่ ArticleCard ต้องการ
-// API ใช้ชื่อฟิลด์ต่างจาก component เช่น description แทน excerpt
 function mapPostToArticle(post) {
   return {
     id: post.id,
     category: post.category,
     title: post.title,
-    excerpt: post.description, // API ส่งมาเป็น description — map เป็น excerpt ให้ ArticleCard
-    author: post.author,
-    authorAvatar: DEFAULT_AUTHOR_AVATAR, // API ไม่มีรูปผู้เขียน — ใช้ค่า default
-    date: formatBlogDate(post.date), // แปลงวันที่ ISO เป็นข้อความอ่านง่าย
-    dateTime: post.date, // เก็บวันที่ ISO ต้นฉบับไว้สำหรับแอตทริบิวต์ dateTime ใน <time>
+    excerpt: post.description,
+    author: post.author || "Unknown",
+    authorAvatar: post.author_image || DEFAULT_AVATAR,
+    date: formatBlogDate(post.date),
+    dateTime: post.date,
     image: post.image,
-    imageAlt: post.title, // API ไม่มี imageAlt — ใช้หัวข้อบทความเป็นคำอธิบายรูป
+    imageAlt: post.title,
   };
 }
 

@@ -67,6 +67,19 @@ export async function fetchCurrentUser() {
   return mapApiUser(userRes.data);
 }
 
+/** โปรไฟล์สาธารณะของแอดมิน (หน้า Hero — ไม่ต้อง login) */
+export async function fetchSiteAuthor() {
+  const response = await api.get("/auth/site-author");
+  return {
+    name: response.data?.name || "",
+    bio: typeof response.data?.bio === "string" ? response.data.bio : "",
+    profilePic:
+      typeof response.data?.profilePic === "string"
+        ? response.data.profilePic
+        : "",
+  };
+}
+
 /** เปลี่ยนรหัสผ่าน (ต้องส่ง token + รหัสเก่า) */
 export async function resetPasswordWithApi({
   currentPassword,
@@ -86,13 +99,14 @@ export async function resetPasswordWithApi({
   }
 }
 
-/** อัปเดตชื่อ / username / รูปโปรไฟล์ */
-export async function updateProfileWithApi({ name, username, avatar }) {
+/** อัปเดตชื่อ / username / รูปโปรไฟล์ / bio */
+export async function updateProfileWithApi({ name, username, avatar, bio }) {
   try {
     const response = await api.put("/auth/profile", {
       name,
       username,
       profilePic: avatar,
+      bio: typeof bio === "string" ? bio : "",
     });
 
     return {

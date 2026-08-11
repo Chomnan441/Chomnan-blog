@@ -49,15 +49,8 @@ export function AuthProvider({ children }) {
         const profile = await fetchCurrentUser();
         if (cancelled) return;
 
-        // คง bio จากแคชไว้ถ้ามี (DB ยังไม่มีคอลัมน์ bio)
-        const cached = getStoredSession();
-        const nextUser = {
-          ...profile,
-          bio: cached?.id === profile.id ? cached.bio || "" : "",
-        };
-
-        setUser(nextUser);
-        saveSession(nextUser);
+        setUser(profile);
+        saveSession(profile);
       } catch {
         if (cancelled) return;
         logoutApiSession();
@@ -163,24 +156,16 @@ export function AuthProvider({ children }) {
         name: profileData.name,
         username: profileData.username,
         avatar: profileData.avatar,
+        bio: profileData.bio,
       });
 
       if (!result.success) {
         return result;
       }
 
-      // bio ยังไม่มีใน DB — เก็บใน session ฝั่ง client ชั่วคราว
-      const nextUser = {
-        ...result.user,
-        bio:
-          typeof profileData.bio === "string"
-            ? profileData.bio.trim()
-            : user.bio || "",
-      };
-
-      setUser(nextUser);
-      saveSession(nextUser);
-      return { success: true, user: nextUser };
+      setUser(result.user);
+      saveSession(result.user);
+      return { success: true, user: result.user };
     },
     [user],
   );

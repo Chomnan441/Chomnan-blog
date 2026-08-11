@@ -21,7 +21,6 @@ import {
   AlertDialogFooter,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useAuth } from "@/context/AuthContext";
 import { ARTICLE_STATUS } from "@/data/categories";
 import {
   createAdminArticleWithUpload,
@@ -36,7 +35,6 @@ const INTRODUCTION_MAX = 120;
 const EMPTY_FORM = {
   image: "",
   category: "",
-  author: "",
   title: "",
   description: "",
   content: "",
@@ -46,15 +44,11 @@ function AdminArticleFormPage() {
   const { articleId } = useParams();
   const isEditMode = Boolean(articleId);
   const navigate = useNavigate();
-  const { user } = useAuth();
   const fileInputRef = useRef(null);
 
   const [categories, setCategories] = useState([]); // [{ id, name }]
 
-  const [formData, setFormData] = useState({
-    ...EMPTY_FORM,
-    author: user?.name || "",
-  });
+  const [formData, setFormData] = useState({ ...EMPTY_FORM });
   const [imageFile, setImageFile] = useState(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
   const [errors, setErrors] = useState({});
@@ -103,10 +97,7 @@ function AdminArticleFormPage() {
   // โหมดแก้ไข: ดึงบทความจาก API ตาม id
   useEffect(() => {
     if (!isEditMode) {
-      setFormData({
-        ...EMPTY_FORM,
-        author: user?.name || "",
-      });
+      setFormData({ ...EMPTY_FORM });
       setIsFetching(false);
       setNotFound(false);
       return;
@@ -134,7 +125,6 @@ function AdminArticleFormPage() {
         category: article.categoryId
           ? String(article.categoryId)
           : article.category || "",
-        author: article.author || user?.name || "",
         title: article.title || "",
         description: article.description || "",
         content: article.content || "",
@@ -148,7 +138,7 @@ function AdminArticleFormPage() {
     return () => {
       cancelled = true;
     };
-  }, [articleId, isEditMode, user?.name]);
+  }, [articleId, isEditMode]);
 
   // โหมดแก้ไข: ถ้าโหลดบทความมาเป็นชื่อหมวด ให้แปลงเป็น id เมื่อรายการหมวดพร้อม
   useEffect(() => {
@@ -248,9 +238,6 @@ function AdminArticleFormPage() {
     if (status === ARTICLE_STATUS.PUBLISHED) {
       if (!formData.category) {
         nextErrors.category = "Category is required";
-      }
-      if (!formData.author.trim()) {
-        nextErrors.author = "Author name is required";
       }
       if (!formData.description.trim()) {
         nextErrors.description = "Introduction is required";
@@ -485,25 +472,6 @@ function AdminArticleFormPage() {
           {errors.category && (
             <p className="text-sm text-red-500" role="alert">
               {errors.category}
-            </p>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="author" className="text-stone-800">
-            Author name
-          </Label>
-          <Input
-            id="author"
-            name="author"
-            value={formData.author}
-            onChange={handleChange}
-            className="h-11 rounded-xl border-stone-300 bg-white"
-            aria-invalid={Boolean(errors.author)}
-          />
-          {errors.author && (
-            <p className="text-sm text-red-500" role="alert">
-              {errors.author}
             </p>
           )}
         </div>

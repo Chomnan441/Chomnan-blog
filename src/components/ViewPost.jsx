@@ -20,9 +20,6 @@ import { api } from "@/lib/api";
 import { DEFAULT_AVATAR } from "@/lib/auth";
 import { formatBlogDate, formatCommentDate } from "@/lib/formatDate";
 
-const DEFAULT_AUTHOR_AVATAR =
-  "https://res.cloudinary.com/dcbpjtd1r/image/upload/c_fill,w_80,h_80,g_face,r_max/v1728449784/my-blog-post/xgfy0xnvyemkklcqodkg.jpg";
-
 function FacebookIcon({ className }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -189,7 +186,11 @@ function ViewPost() {
           </div>
 
           <aside className="lg:sticky lg:top-24 lg:self-start">
-            <AuthorBio author={post.author} />
+            <AuthorBio
+              author={post.author}
+              avatar={post.author_image}
+              bio={post.author_bio}
+            />
           </aside>
         </div>
 
@@ -284,12 +285,14 @@ function ViewPost() {
   );
 }
 
-function AuthorBio({ author }) {
+function AuthorBio({ author, avatar, bio }) {
+  const bioText = typeof bio === "string" ? bio.trim() : "";
+
   return (
     <section className="rounded-2xl bg-stone-100 p-6">
       <div className="flex items-center gap-3">
         <img
-          src={DEFAULT_AUTHOR_AVATAR}
+          src={avatar || DEFAULT_AVATAR}
           alt={`${author || "Author"} profile`}
           className="size-12 rounded-full object-cover"
         />
@@ -298,15 +301,9 @@ function AuthorBio({ author }) {
           <p className="font-bold text-stone-950">{author || "Unknown"}</p>
         </div>
       </div>
-      <p className="mt-4 text-sm leading-relaxed text-stone-600">
-        I am a pet enthusiast and freelance writer who specializes in animal
-        behavior and care. With a deep love for cats, I enjoy sharing insights
-        on feline companionship and wellness.
-      </p>
-      <p className="mt-3 text-sm leading-relaxed text-stone-600">
-        When I&apos;m not writing, I spend time volunteering at my local animal
-        shelter, helping cats find loving homes.
-      </p>
+      {bioText ? (
+        <p className="mt-4 text-sm leading-relaxed text-stone-600">{bioText}</p>
+      ) : null}
     </section>
   );
 }
