@@ -61,7 +61,7 @@ function ProfilePage() {
     event.target.value = "";
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
 
     const nextErrors = {};
@@ -77,7 +77,7 @@ function ProfilePage() {
       return;
     }
 
-    const result = updateProfile({
+    const result = await updateProfile({
       name: formData.name,
       username: formData.username,
       avatar: formData.avatar || DEFAULT_AVATAR,

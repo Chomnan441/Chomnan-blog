@@ -23,12 +23,12 @@ function SignUpPage() {
     setErrors((prev) => ({ ...prev, [name]: undefined }));
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
-    const result = signUp(formData);
+    const result = await signUp(formData);
 
     if (!result.success) {
-      setErrors(result.errors);
+      setErrors(result.errors || { form: result.error });
       return;
     }
 
@@ -81,6 +81,12 @@ function SignUpPage() {
             error={errors.password}
             autoComplete="new-password"
           />
+
+          {errors.form && (
+            <p className="text-sm text-red-500" role="alert">
+              {errors.form}
+            </p>
+          )}
 
           <Button
             type="submit"

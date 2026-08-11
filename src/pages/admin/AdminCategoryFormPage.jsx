@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -6,41 +6,60 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   createAdminCategory,
-  getAdminCategoryById,
+  fetchAdminCategoryById,
   updateAdminCategory,
 } from "@/lib/adminCategories";
-import { renameArticleCategory } from "@/lib/adminArticles";
 
 function AdminCategoryFormPage() {
   const { categoryId } = useParams();
   const isEditMode = Boolean(categoryId);
   const navigate = useNavigate();
 
-  const existingCategory = useMemo(
-    () => (isEditMode ? getAdminCategoryById(categoryId) : null),
-    [isEditMode, categoryId],
-  );
-
-  const [name, setName] = useState(() => existingCategory?.name || "");
+  const [name, setName] = useState("");
   const [error, setError] = useState("");
+  const [isFetching, setIsFetching] = useState(isEditMode);
+  const [notFound, setNotFound] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (!isEditMode) {
       setName("");
+      setIsFetching(false);
+      setNotFound(false);
       return;
     }
 
-    const category = getAdminCategoryById(categoryId);
-    if (category) {
-      setName(category.name);
+    let cancelled = false;
+
+    async function loadCategory() {
+      setIsFetching(true);
+      setNotFound(false);
+
+      const result = await fetchAdminCategoryById(categoryId);
+      if (cancelled) return;
+
+      if (!result.success || !result.category) {
+        setNotFound(true);
+        setIsFetching(false);
+        return;
+      }
+
+      setName(result.category.name);
+      setIsFetching(false);
     }
+
+    loadCategory();
+
+    return () => {
+      cancelled = true;
+    };
   }, [categoryId, isEditMode]);
 
-  if (isEditMode && !existingCategory) {
+  if (isEditMode && !isFetching && notFound) {
     return <Navigate to="/admin/categories" replace />;
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
 
     if (!name.trim()) {
@@ -48,39 +67,50 @@ function AdminCategoryFormPage() {
       return;
     }
 
-    if (isEditMode) {
-      const result = updateAdminCategory(categoryId, { name });
-      if (!result.success) {
-        setError(result.error);
-        toast.error("Could not update category", {
-          description: result.error,
+    if (isSaving) return;
+    setIsSaving(true);
+
+    try {
+      if (isEditMode) {
+        const result = await updateAdminCategory(categoryId, { name });
+        if (!result.success) {
+          setError(result.error);
+          toast.error("Could not update category", {
+            description: result.error,
+          });
+          return;
+        }
+
+        toast.success("Category updated", {
+          description: "Category has been successfully updated.",
         });
-        return;
-      }
+      } else {
+        const result = await createAdminCategory({ name });
+        if (!result.success) {
+          setError(result.error);
+          toast.error("Could not create category", {
+            description: result.error,
+          });
+          return;
+        }
 
-      if (result.previousName !== result.category.name) {
-        renameArticleCategory(result.previousName, result.category.name);
-      }
-
-      toast.success("Category updated", {
-        description: "Category has been successfully updated.",
-      });
-    } else {
-      const result = createAdminCategory({ name });
-      if (!result.success) {
-        setError(result.error);
-        toast.error("Could not create category", {
-          description: result.error,
+        toast.success("Create category", {
+          description: "Category has been successfully created.",
         });
-        return;
       }
 
-      toast.success("Create category", {
-        description: "Category has been successfully created.",
-      });
+      navigate("/admin/categories");
+    } finally {
+      setIsSaving(false);
     }
+  }
 
-    navigate("/admin/categories");
+  if (isFetching) {
+    return (
+      <section className="px-6 py-8 md:px-10 md:py-10">
+        <p className="text-sm text-stone-500">Loading category...</p>
+      </section>
+    );
   }
 
   return (
@@ -93,8 +123,9 @@ function AdminCategoryFormPage() {
           type="submit"
           form="category-form"
           className="h-11 rounded-full bg-stone-950 px-8 text-base font-medium text-white hover:bg-stone-800"
+          disabled={isSaving}
         >
-          Save
+          {isSaving ? "Saving..." : "Save"}
         </Button>
       </header>
 

@@ -1,169 +1,127 @@
 import { ARTICLE_STATUS } from "@/data/categories";
-import { getCategoryNames } from "@/lib/adminCategories";
 import { api } from "@/lib/api";
 
-const ARTICLES_KEY = "chomnan_blog_admin_articles";
+/**
+ * แปลงสถานะจาก DB → ค่าที่ UI ใช้
+ * DB อาจเก็บ "publish" ส่วน UI ใช้ "published"
+ */
+function mapStatusFromApi(status) {
+  const normalized = String(status || "")
+    .trim()
+    .toLowerCase();
 
-/** ชื่อหมวดใน UI → id ในตาราง categories */
-const CATEGORY_NAME_TO_ID = {
-  Cat: 1,
-  Inspiration: 2,
-  General: 3,
-};
-
-/** สถานะใน UI → id ในตาราง statuses (DB ใช้ชื่อ publish) */
-const STATUS_TO_ID = {
-  [ARTICLE_STATUS.DRAFT]: 1,
-  [ARTICLE_STATUS.PUBLISHED]: 2,
-};
-
-export function getCategoryIdByName(categoryName) {
-  return CATEGORY_NAME_TO_ID[categoryName] ?? null;
-}
-
-export function getStatusId(status) {
-  return STATUS_TO_ID[status] ?? null;
-}
-
-function getDefaultCategory() {
-  return getCategoryNames()[0] || "General";
-}
-
-const SEED_ARTICLES = [
-  {
-    id: "article-1",
-    title:
-      "Understanding Cat Behavior: Why Your Feline Friend Acts the Way They Do",
-    category: "Cat",
-    status: ARTICLE_STATUS.PUBLISHED,
-    image:
-      "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=800&h=533&q=80",
-    author: "Thompson P.",
-    description:
-      "Dive into the curious world of cat behavior, exploring why cats knead, purr, and chase imaginary prey.",
-    content:
-      "## Independent Yet Affectionate\n\nCats balance independence with deep bonds to their humans.\n\n## Playful Personalities\n\nDaily play keeps cats healthy and emotionally fulfilled.",
-    createdAt: "2024-09-11T10:00:00.000Z",
-    updatedAt: "2024-09-11T10:00:00.000Z",
-  },
-  {
-    id: "article-2",
-    title: "The Secret Language of Cats: Decoding Feline Communication",
-    category: "Cat",
-    status: ARTICLE_STATUS.PUBLISHED,
-    image:
-      "https://images.unsplash.com/photo-1450778869180-41d0601e046e?auto=format&fit=crop&w=800&h=533&q=80",
-    author: "Thompson P.",
-    description:
-      "Learn how cats communicate through body language, vocal cues, and subtle everyday signals.",
-    content:
-      "## Reading the Signs\n\nCats speak through posture, tail movement, and quiet sounds that often go unnoticed.\n\n## Building Trust\n\nUnderstanding feline communication helps deepen the bond between cats and their people.",
-    createdAt: "2024-09-10T10:00:00.000Z",
-    updatedAt: "2024-09-10T10:00:00.000Z",
-  },
-  {
-    id: "article-3",
-    title: "Finding Motivation: What Cats Can Teach Us About Focus",
-    category: "Inspiration",
-    status: ARTICLE_STATUS.DRAFT,
-    image:
-      "https://images.unsplash.com/photo-1574158622682-e40e69881006?auto=format&fit=crop&w=800&h=533&q=80",
-    author: "Thompson P.",
-    description:
-      "A gentle look at how observing pets can renew motivation and creative energy.",
-    content:
-      "## Start Small\n\nLike a cat stalking prey, focus on one clear target at a time.",
-    createdAt: "2024-09-09T10:00:00.000Z",
-    updatedAt: "2024-09-09T10:00:00.000Z",
-  },
-  {
-    id: "article-4",
-    title: "Unlocking Creativity: How Pets Spark Fresh Ideas for Writers",
-    category: "General",
-    status: ARTICLE_STATUS.PUBLISHED,
-    image:
-      "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=800&h=533&q=80",
-    author: "Thompson P.",
-    description:
-      "Discover how daily moments with animals can unlock new stories and characters.",
-    content:
-      "## Muse Moments\n\nPets offer quiet company that often unlocks unexpected ideas.",
-    createdAt: "2024-09-08T10:00:00.000Z",
-    updatedAt: "2024-09-08T10:00:00.000Z",
-  },
-];
-
-function readArticles() {
-  const stored = localStorage.getItem(ARTICLES_KEY);
-  if (!stored) {
-    localStorage.setItem(ARTICLES_KEY, JSON.stringify(SEED_ARTICLES));
-    return [...SEED_ARTICLES];
+  if (normalized === "publish" || normalized === "published") {
+    return ARTICLE_STATUS.PUBLISHED;
   }
 
-  try {
-    const parsed = JSON.parse(stored);
-    if (!Array.isArray(parsed)) {
-      return [...SEED_ARTICLES];
-    }
-
-    // Keep seed article-2 title in sync for existing local data
-    let changed = false;
-    const nextTitle =
-      "The Secret Language of Cats: Decoding Feline Communication";
-    const articles = parsed.map((article) => {
-      if (article.id !== "article-2" || article.title === nextTitle) {
-        return article;
-      }
-
-      changed = true;
-      return {
-        ...article,
-        title: nextTitle,
-      };
-    });
-
-    if (changed) {
-      writeArticles(articles);
-    }
-    return articles;
-  } catch {
-    return [...SEED_ARTICLES];
-  }
+  return ARTICLE_STATUS.DRAFT;
 }
 
-function writeArticles(articles) {
-  localStorage.setItem(ARTICLES_KEY, JSON.stringify(articles));
+/**
+ * แปลงแถวจาก API ให้เป็นรูปที่หน้า admin คุ้นเคย
+ * (title, category ชื่อ, status draft/published, ...)
+ */
+export function mapApiPostToArticle(post) {
+  return {
+    id: post.id,
+    title: post.title || "",
+    category: post.category || "",
+    categoryId: post.category_id || null,
+    status: mapStatusFromApi(post.status),
+    statusId: post.status_id ?? null,
+    image: post.image || "",
+    author: post.author || "",
+    description: post.description || "",
+    content: post.content || "",
+    createdAt: post.date || null,
+    updatedAt: post.date || null,
+    likesCount: post.likes_count ?? 0,
+  };
 }
 
-export function getAdminArticles() {
-  return readArticles().sort(
-    (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt),
+/** ดึง categories + statuses จาก DB (uuid / id จริง) */
+export async function fetchPostLookups() {
+  const { data } = await api.get("/posts/lookups");
+  return {
+    categories: Array.isArray(data?.categories) ? data.categories : [],
+    statuses: Array.isArray(data?.statuses) ? data.statuses : [],
+  };
+}
+
+function findCategoryIdByName(categories, categoryNameOrId) {
+  const raw = String(categoryNameOrId || "").trim();
+  if (!raw) return null;
+
+  // ถ้าส่งมาเป็น id อยู่แล้ว ใช้เลย
+  const byId = categories.find((item) => String(item.id) === raw);
+  if (byId) return String(byId.id);
+
+  const match = categories.find(
+    (item) => item.name?.toLowerCase() === raw.toLowerCase(),
+  );
+  return match?.id != null ? String(match.id) : null;
+}
+
+function findStatusId(statuses, articleStatus) {
+  const wantPublished = articleStatus === ARTICLE_STATUS.PUBLISHED;
+
+  const match = statuses.find((item) => {
+    const name = String(item.status || "").toLowerCase();
+    if (wantPublished) {
+      return name === "publish" || name === "published";
+    }
+    return name === "draft";
+  });
+
+  return match?.id ?? null;
+}
+
+function getErrorMessage(error, fallback) {
+  return (
+    error.response?.data?.message ||
+    error.response?.data?.error ||
+    error.message ||
+    fallback
   );
 }
 
-export function getAdminArticleById(articleId) {
-  return readArticles().find((article) => article.id === articleId) || null;
+/** ดึงรายการบทความทั้งหมดจาก API (สำหรับหน้า admin) */
+export async function fetchAdminArticles() {
+  try {
+    // limit สูงเพื่อให้ admin เห็นครบในรอบเดียว (หน้าบ้านยังใช้ limit 6)
+    const { data } = await api.get("/posts", {
+      params: { page: 1, limit: 100 },
+    });
+
+    const posts = Array.isArray(data?.posts) ? data.posts : [];
+    return {
+      success: true,
+      articles: posts.map(mapApiPostToArticle),
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to load articles"),
+      articles: [],
+    };
+  }
 }
 
-export function createAdminArticle(articleData) {
-  const articles = readArticles();
-  const now = new Date().toISOString();
-  const newArticle = {
-    id: crypto.randomUUID(),
-    title: articleData.title.trim(),
-    category: articleData.category || getDefaultCategory(),
-    status: articleData.status,
-    image: articleData.image || "",
-    author: articleData.author.trim(),
-    description: articleData.description.trim(),
-    content: articleData.content.trim(),
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  articles.unshift(newArticle);
-  writeArticles(articles);
-  return newArticle;
+/** ดึงบทความทีละชิ้นด้วย id (uuid) */
+export async function fetchAdminArticleById(articleId) {
+  try {
+    const { data } = await api.get(`/posts/${articleId}`);
+    return {
+      success: true,
+      article: mapApiPostToArticle(data),
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Article not found"),
+      article: null,
+    };
+  }
 }
 
 /** สร้างโพสต์ผ่าน Backend + อัปโหลดรูปไป Supabase Storage */
@@ -175,30 +133,31 @@ export async function createAdminArticleWithUpload({
   status,
   imageFile,
 }) {
-  const categoryId = getCategoryIdByName(category);
-  const statusId = getStatusId(status);
-
-  if (!categoryId) {
-    return { success: false, error: "Invalid category" };
-  }
-
-  if (!statusId) {
-    return { success: false, error: "Invalid status" };
-  }
-
   if (!imageFile) {
     return { success: false, error: "Image file is required" };
   }
 
-  const formData = new FormData();
-  formData.append("title", title.trim());
-  formData.append("category_id", String(categoryId));
-  formData.append("description", description.trim());
-  formData.append("content", content.trim());
-  formData.append("status_id", String(statusId));
-  formData.append("imageFile", imageFile);
-
   try {
+    const lookups = await fetchPostLookups();
+    const categoryId = findCategoryIdByName(lookups.categories, category);
+    const statusId = findStatusId(lookups.statuses, status);
+
+    if (!categoryId) {
+      return { success: false, error: "Invalid category" };
+    }
+
+    if (!statusId) {
+      return { success: false, error: "Invalid status" };
+    }
+
+    const formData = new FormData();
+    formData.append("title", title.trim());
+    formData.append("category_id", String(categoryId));
+    formData.append("description", description.trim());
+    formData.append("content", content.trim());
+    formData.append("status_id", String(statusId));
+    formData.append("imageFile", imageFile);
+
     const response = await api.post("/posts", formData);
     return {
       success: true,
@@ -206,73 +165,89 @@ export async function createAdminArticleWithUpload({
       image: response.data?.image,
     };
   } catch (error) {
-    const message =
-      error.response?.data?.message ||
-      error.response?.data?.error ||
-      error.message ||
-      "Failed to create post";
-    return { success: false, error: message };
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to create post"),
+    };
   }
 }
 
-export function updateAdminArticle(articleId, articleData) {
-  const articles = readArticles();
-  const index = articles.findIndex((article) => article.id === articleId);
+/**
+ * อัปเดตโพสต์ผ่าน API
+ * - ถ้ามี imageFile ใหม่ → ส่ง multipart
+ * - ถ้าไม่มี → ส่ง JSON พร้อม URL รูปเดิม
+ */
+export async function updateAdminArticle(articleId, articleData) {
+  try {
+    const lookups = await fetchPostLookups();
+    const categoryId = findCategoryIdByName(
+      lookups.categories,
+      articleData.category,
+    );
+    const statusId = findStatusId(lookups.statuses, articleData.status);
 
-  if (index === -1) {
-    return { success: false, error: "Article not found" };
-  }
-
-  articles[index] = {
-    ...articles[index],
-    title: articleData.title.trim(),
-    category: articleData.category || getDefaultCategory(),
-    status: articleData.status,
-    image: articleData.image || "",
-    author: articleData.author.trim(),
-    description: articleData.description.trim(),
-    content: articleData.content.trim(),
-    updatedAt: new Date().toISOString(),
-  };
-
-  writeArticles(articles);
-  return { success: true, article: articles[index] };
-}
-
-export function deleteAdminArticle(articleId) {
-  const articles = readArticles();
-  const next = articles.filter((article) => article.id !== articleId);
-
-  if (next.length === articles.length) {
-    return { success: false, error: "Article not found" };
-  }
-
-  writeArticles(next);
-  return { success: true };
-}
-
-export function renameArticleCategory(previousName, nextName) {
-  const articles = readArticles();
-  let changed = false;
-
-  const updated = articles.map((article) => {
-    if (article.category !== previousName) {
-      return article;
+    if (!categoryId) {
+      return { success: false, error: "Invalid category" };
     }
 
-    changed = true;
-    return {
-      ...article,
-      category: nextName,
-      updatedAt: new Date().toISOString(),
-    };
-  });
+    if (!statusId) {
+      return { success: false, error: "Invalid status" };
+    }
 
-  if (changed) {
-    writeArticles(updated);
+    if (articleData.imageFile) {
+      const formData = new FormData();
+      formData.append("title", articleData.title.trim());
+      formData.append("category_id", String(categoryId));
+      formData.append("description", articleData.description.trim());
+      formData.append("content", articleData.content.trim());
+      formData.append("status_id", String(statusId));
+      formData.append("image", articleData.image || "");
+      formData.append("imageFile", articleData.imageFile);
+
+      const response = await api.put(`/posts/${articleId}`, formData);
+      return {
+        success: true,
+        message: response.data?.message,
+        image: response.data?.image,
+      };
+    }
+
+    const response = await api.put(`/posts/${articleId}`, {
+      title: articleData.title.trim(),
+      image: articleData.image || "",
+      category_id: categoryId,
+      description: articleData.description.trim(),
+      content: articleData.content.trim(),
+      status_id: statusId,
+    });
+
+    return {
+      success: true,
+      message: response.data?.message,
+      image: response.data?.image,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to update post"),
+    };
   }
 }
 
+/** ลบบทความผ่าน API */
+export async function deleteAdminArticle(articleId) {
+  try {
+    await api.delete(`/posts/${articleId}`);
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to delete post"),
+    };
+  }
+}
+
+/** กรองรายการฝั่ง client (ค้นหา / สถานะ / หมวด) */
 export function filterAdminArticles(
   articles,
   { keyword = "", status = "all", category = "all" } = {},
@@ -283,7 +258,7 @@ export function filterAdminArticles(
     const matchesKeyword =
       !normalizedKeyword ||
       article.title.toLowerCase().includes(normalizedKeyword) ||
-      article.description.toLowerCase().includes(normalizedKeyword);
+      (article.description || "").toLowerCase().includes(normalizedKeyword);
 
     const matchesStatus = status === "all" || article.status === status;
     const matchesCategory =

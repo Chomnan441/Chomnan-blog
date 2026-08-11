@@ -1,133 +1,128 @@
-const CATEGORIES_KEY = "chomnan_blog_admin_categories";
+import { api } from "@/lib/api";
 
-const SEED_CATEGORIES = [
-  {
-    id: "category-1",
-    name: "Cat",
-    createdAt: "2024-09-01T10:00:00.000Z",
-    updatedAt: "2024-09-01T10:00:00.000Z",
-  },
-  {
-    id: "category-2",
-    name: "General",
-    createdAt: "2024-09-01T10:00:00.000Z",
-    updatedAt: "2024-09-01T10:00:00.000Z",
-  },
-  {
-    id: "category-3",
-    name: "Inspiration",
-    createdAt: "2024-09-01T10:00:00.000Z",
-    updatedAt: "2024-09-01T10:00:00.000Z",
-  },
-];
+function getErrorMessage(error, fallback) {
+  return (
+    error.response?.data?.error ||
+    error.response?.data?.message ||
+    error.message ||
+    fallback
+  );
+}
 
-function readCategories() {
-  const stored = localStorage.getItem(CATEGORIES_KEY);
-  if (!stored) {
-    localStorage.setItem(CATEGORIES_KEY, JSON.stringify(SEED_CATEGORIES));
-    return [...SEED_CATEGORIES];
+function mapCategory(row) {
+  return {
+    id: row.id,
+    name: row.name || "",
+  };
+}
+
+/** ดึงหมวดทั้งหมดจาก API */
+export async function fetchAdminCategories() {
+  try {
+    const { data } = await api.get("/categories");
+    const rows = Array.isArray(data?.categories) ? data.categories : [];
+    return {
+      success: true,
+      categories: rows.map(mapCategory),
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to load categories"),
+      categories: [],
+    };
+  }
+}
+
+/** ชื่อหมวดอย่างเดียว (dropdown / filter) */
+export async function fetchCategoryNames() {
+  const result = await fetchAdminCategories();
+  if (!result.success) {
+    return result;
+  }
+
+  return {
+    success: true,
+    names: result.categories.map((category) => category.name),
+  };
+}
+
+/** ดึงหมวดทีละชิ้น */
+export async function fetchAdminCategoryById(categoryId) {
+  try {
+    const { data } = await api.get(`/categories/${categoryId}`);
+    return {
+      success: true,
+      category: mapCategory(data),
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Category not found"),
+      category: null,
+    };
+  }
+}
+
+/** สร้างหมวดใหม่ */
+export async function createAdminCategory({ name }) {
+  const trimmedName = typeof name === "string" ? name.trim() : "";
+  if (!trimmedName) {
+    return { success: false, error: "Category name is required" };
   }
 
   try {
-    const parsed = JSON.parse(stored);
-    return Array.isArray(parsed) ? parsed : [...SEED_CATEGORIES];
-  } catch {
-    return [...SEED_CATEGORIES];
+    const { data } = await api.post("/categories", { name: trimmedName });
+    return {
+      success: true,
+      category: mapCategory(data?.category || {}),
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to create category"),
+    };
   }
 }
 
-function writeCategories(categories) {
-  localStorage.setItem(CATEGORIES_KEY, JSON.stringify(categories));
-}
-
-export function getAdminCategories() {
-  return readCategories().sort((a, b) =>
-    a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
-  );
-}
-
-export function getCategoryNames() {
-  return getAdminCategories().map((category) => category.name);
-}
-
-export function getAdminCategoryById(categoryId) {
-  return readCategories().find((category) => category.id === categoryId) || null;
-}
-
-export function createAdminCategory({ name }) {
-  const trimmedName = name.trim();
+/** แก้ชื่อหมวด */
+export async function updateAdminCategory(categoryId, { name }) {
+  const trimmedName = typeof name === "string" ? name.trim() : "";
   if (!trimmedName) {
     return { success: false, error: "Category name is required" };
   }
 
-  const categories = readCategories();
-  const nameTaken = categories.some(
-    (category) => category.name.toLowerCase() === trimmedName.toLowerCase(),
-  );
-
-  if (nameTaken) {
-    return { success: false, error: "Category name already exists" };
+  try {
+    const { data } = await api.put(`/categories/${categoryId}`, {
+      name: trimmedName,
+    });
+    return {
+      success: true,
+      category: mapCategory(data?.category || {}),
+      previousName: data?.previousName,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to update category"),
+    };
   }
-
-  const now = new Date().toISOString();
-  const newCategory = {
-    id: crypto.randomUUID(),
-    name: trimmedName,
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  categories.push(newCategory);
-  writeCategories(categories);
-  return { success: true, category: newCategory };
 }
 
-export function updateAdminCategory(categoryId, { name }) {
-  const trimmedName = name.trim();
-  if (!trimmedName) {
-    return { success: false, error: "Category name is required" };
+/** ลบหมวด */
+export async function deleteAdminCategory(categoryId) {
+  try {
+    await api.delete(`/categories/${categoryId}`);
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to delete category"),
+    };
   }
-
-  const categories = readCategories();
-  const index = categories.findIndex((category) => category.id === categoryId);
-
-  if (index === -1) {
-    return { success: false, error: "Category not found" };
-  }
-
-  const nameTaken = categories.some(
-    (category) =>
-      category.id !== categoryId &&
-      category.name.toLowerCase() === trimmedName.toLowerCase(),
-  );
-
-  if (nameTaken) {
-    return { success: false, error: "Category name already exists" };
-  }
-
-  const previousName = categories[index].name;
-  categories[index] = {
-    ...categories[index],
-    name: trimmedName,
-    updatedAt: new Date().toISOString(),
-  };
-
-  writeCategories(categories);
-  return { success: true, category: categories[index], previousName };
 }
 
-export function deleteAdminCategory(categoryId) {
-  const categories = readCategories();
-  const next = categories.filter((category) => category.id !== categoryId);
-
-  if (next.length === categories.length) {
-    return { success: false, error: "Category not found" };
-  }
-
-  writeCategories(next);
-  return { success: true };
-}
-
+/** กรองรายการฝั่ง client ตามคำค้น */
 export function filterAdminCategories(categories, keyword = "") {
   const normalizedKeyword = keyword.trim().toLowerCase();
   if (!normalizedKeyword) {

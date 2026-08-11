@@ -12,7 +12,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
-import { MOCK_NOTIFICATIONS } from "@/data/notifications";
+import {
+  fetchNotifications,
+  markAllNotificationsRead,
+} from "@/lib/notificationsApi";
 import { DEFAULT_AVATAR } from "@/lib/auth";
 import logo from "@/assets/logo.svg";
 import logoHover from "@/assets/logo-hoverNew.gif";
@@ -24,6 +27,8 @@ function NavBar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false); // เมนูมือถือ (hamburger) ของคนที่ยังไม่ล็อกอิน
   const [isProfileOpen, setIsProfileOpen] = useState(false); // dropdown โปรไฟล์ (หลังล็อกอิน)
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false); // dropdown แจ้งเตือน
+  const [notifications, setNotifications] = useState([]);
+  const [hasUnread, setHasUnread] = useState(false);
   // Ref (useRef) — ชี้ไปที่ DOM
   const profileRef = useRef(null); // กล่อง dropdown โปรไฟล์
   const notificationsRef = useRef(null); //กล่อง dropdown แจ้งเตือน
@@ -34,6 +39,43 @@ function NavBar() {
   }
   function closeMenu() {
     setIsMenuOpen(false);
+  }
+
+  // โหลดแจ้งเตือนเมื่อล็อกอินแล้ว
+  useEffect(() => {
+    if (!user) {
+      setNotifications([]);
+      setHasUnread(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadNotifications() {
+      const result = await fetchNotifications();
+      if (cancelled || !result.success) return;
+      setNotifications(result.notifications);
+      setHasUnread(result.notifications.some((item) => !item.isRead));
+    }
+
+    loadNotifications();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  async function handleOpenNotifications() {
+    const nextOpen = !isNotificationsOpen;
+    setIsNotificationsOpen(nextOpen);
+    setIsProfileOpen(false);
+
+    if (nextOpen && hasUnread) {
+      await markAllNotificationsRead();
+      setHasUnread(false);
+      setNotifications((prev) =>
+        prev.map((item) => ({ ...item, isRead: true })),
+      );
+    }
   }
 
   useEffect(() => {
@@ -112,16 +154,15 @@ function NavBar() {
                 aria-label="Notifications"
                 aria-expanded={isNotificationsOpen}
                 aria-haspopup="menu"
-                onClick={() => {
-                  setIsNotificationsOpen((prev) => !prev);
-                  setIsProfileOpen(false);
-                }}
+                onClick={handleOpenNotifications}
               >
                 <Bell className="size-5" aria-hidden="true" />
-                <span
-                  className="absolute top-1.5 right-1.5 size-2 rounded-full bg-red-500"
-                  aria-hidden="true"
-                />
+                {hasUnread && (
+                  <span
+                    className="absolute top-1.5 right-1.5 size-2 rounded-full bg-red-500"
+                    aria-hidden="true"
+                  />
+                )}
               </button>
 
               {/* dropdown แจ้งเตือน */}
@@ -130,32 +171,49 @@ function NavBar() {
                   role="menu"
                   className="absolute right-0 z-50 mt-2 w-[min(100vw-2rem,22rem)] rounded-2xl border border-stone-200 bg-white py-2 shadow-lg"
                 >
-                  {MOCK_NOTIFICATIONS.map((notification) => (
-                    <article
-                      key={notification.id}
-                      role="menuitem"
-                      className="flex gap-3 px-4 py-3 hover:bg-stone-50"
-                    >
-                      <span className="size-10 shrink-0 overflow-hidden rounded-full bg-stone-200">
-                        <img
-                          src={notification.avatar}
-                          alt={`${notification.name} avatar`}
-                          className="size-full object-cover"
-                        />
-                      </span>
-                      <div className="min-w-0">
-                        <p className="text-sm text-stone-800">
-                          <span className="font-semibold">
-                            {notification.name}
-                          </span>{" "}
-                          {notification.message}
-                        </p>
-                        <p className="mt-1 text-xs text-orange-700/80">
-                          {notification.time}
-                        </p>
-                      </div>
-                    </article>
-                  ))}
+                  {notifications.length === 0 ? (
+                    <p className="px-4 py-6 text-center text-sm text-stone-500">
+                      No notifications yet.
+                    </p>
+                  ) : (
+                    notifications.slice(0, 8).map((notification) => (
+                      <article
+                        key={notification.id}
+                        role="menuitem"
+                        className="flex gap-3 px-4 py-3 hover:bg-stone-50"
+                      >
+                        <span className="size-10 shrink-0 overflow-hidden rounded-full bg-stone-200">
+                          <img
+                            src={notification.avatar}
+                            alt={`${notification.name} avatar`}
+                            className="size-full object-cover"
+                          />
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-sm text-stone-800">
+                            <span className="font-semibold">
+                              {notification.name}
+                            </span>{" "}
+                            {notification.message}
+                          </p>
+                          <p className="mt-1 text-xs text-orange-700/80">
+                            {notification.time}
+                          </p>
+                        </div>
+                      </article>
+                    ))
+                  )}
+                  {isAdmin && (
+                    <div className="border-t border-stone-100 px-4 py-2">
+                      <Link
+                        to="/admin/notifications"
+                        className="text-sm font-medium text-stone-950 underline underline-offset-2"
+                        onClick={() => setIsNotificationsOpen(false)}
+                      >
+                        View all
+                      </Link>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

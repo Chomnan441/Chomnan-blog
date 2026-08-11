@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { ImageIcon, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
@@ -21,22 +21,20 @@ import {
   AlertDialogFooter,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useAuth } from "@/context/AuthContext";
 import { ARTICLE_STATUS } from "@/data/categories";
 import {
   createAdminArticleWithUpload,
   deleteAdminArticle,
-  getAdminArticleById,
+  fetchAdminArticleById,
+  fetchPostLookups,
   updateAdminArticle,
 } from "@/lib/adminArticles";
-import { getCategoryNames } from "@/lib/adminCategories";
 
 const INTRODUCTION_MAX = 120;
 
 const EMPTY_FORM = {
   image: "",
   category: "",
-  author: "",
   title: "",
   description: "",
   content: "",
@@ -46,37 +44,47 @@ function AdminArticleFormPage() {
   const { articleId } = useParams();
   const isEditMode = Boolean(articleId);
   const navigate = useNavigate();
-  const { user } = useAuth();
   const fileInputRef = useRef(null);
 
-  const existingArticle = useMemo(
-    () => (isEditMode ? getAdminArticleById(articleId) : null),
-    [isEditMode, articleId],
-  );
-  const categories = getCategoryNames();
+  const [categories, setCategories] = useState([]); // [{ id, name }]
 
-  const [formData, setFormData] = useState(() => {
-    if (existingArticle) {
-      return {
-        image: existingArticle.image || "",
-        category: existingArticle.category || "",
-        author: existingArticle.author || user?.name || "",
-        title: existingArticle.title || "",
-        description: existingArticle.description || "",
-        content: existingArticle.content || "",
-      };
-    }
-
-    return {
-      ...EMPTY_FORM,
-      author: user?.name || "",
-    };
-  });
+  const [formData, setFormData] = useState({ ...EMPTY_FORM });
   const [imageFile, setImageFile] = useState(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
   const [errors, setErrors] = useState({});
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(isEditMode);
+  const [notFound, setNotFound] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCategories() {
+      try {
+        const lookups = await fetchPostLookups();
+        if (!cancelled) {
+          setCategories(
+            lookups.categories.map((item) => ({
+              id: String(item.id),
+              name: item.name,
+            })),
+          );
+        }
+      } catch {
+        if (!cancelled) {
+          setCategories([]);
+          toast.error("Could not load categories");
+        }
+      }
+    }
+
+    loadCategories();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -86,29 +94,71 @@ function AdminArticleFormPage() {
     };
   }, [imagePreviewUrl]);
 
+  // โหมดแก้ไข: ดึงบทความจาก API ตาม id
   useEffect(() => {
     if (!isEditMode) {
-      setFormData({
-        ...EMPTY_FORM,
-        author: user?.name || "",
-      });
+      setFormData({ ...EMPTY_FORM });
+      setIsFetching(false);
+      setNotFound(false);
       return;
     }
 
-    const article = getAdminArticleById(articleId);
-    if (!article) return;
+    let cancelled = false;
 
-    setFormData({
-      image: article.image || "",
-      category: article.category || "",
-      author: article.author || user?.name || "",
-      title: article.title || "",
-      description: article.description || "",
-      content: article.content || "",
-    });
-  }, [articleId, isEditMode, user?.name]);
+    async function loadArticle() {
+      setIsFetching(true);
+      setNotFound(false);
 
-  if (isEditMode && !existingArticle) {
+      const result = await fetchAdminArticleById(articleId);
+      if (cancelled) return;
+
+      if (!result.success || !result.article) {
+        setNotFound(true);
+        setIsFetching(false);
+        return;
+      }
+
+      const article = result.article;
+      // เก็บเป็น category id ถ้ามี — ไม่ก็ใช้ชื่อไปก่อน แล้ว map ทีหลังเมื่อ categories โหลดมา
+      setFormData({
+        image: article.image || "",
+        category: article.categoryId
+          ? String(article.categoryId)
+          : article.category || "",
+        title: article.title || "",
+        description: article.description || "",
+        content: article.content || "",
+      });
+      setImageFile(null);
+      setIsFetching(false);
+    }
+
+    loadArticle();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [articleId, isEditMode]);
+
+  // โหมดแก้ไข: ถ้าโหลดบทความมาเป็นชื่อหมวด ให้แปลงเป็น id เมื่อรายการหมวดพร้อม
+  useEffect(() => {
+    if (!isEditMode || categories.length === 0 || !formData.category) return;
+
+    const matchedById = categories.find(
+      (item) => item.id === formData.category,
+    );
+    if (matchedById) return;
+
+    const matchedByName = categories.find(
+      (item) =>
+        item.name.toLowerCase() === String(formData.category).toLowerCase(),
+    );
+    if (matchedByName) {
+      setFormData((prev) => ({ ...prev, category: matchedByName.id }));
+    }
+  }, [categories, formData.category, isEditMode]);
+
+  if (isEditMode && !isFetching && notFound) {
     return <Navigate to="/admin/articles" replace />;
   }
 
@@ -173,7 +223,6 @@ function AdminArticleFormPage() {
       nextErrors.title = "Title is required";
     }
 
-    // Create ผ่าน API บังคับฟิลด์ครบ (backend validate)
     if (!isEditMode) {
       if (!formData.category) {
         nextErrors.category = "Category is required";
@@ -189,9 +238,6 @@ function AdminArticleFormPage() {
     if (status === ARTICLE_STATUS.PUBLISHED) {
       if (!formData.category) {
         nextErrors.category = "Category is required";
-      }
-      if (!formData.author.trim()) {
-        nextErrors.author = "Author name is required";
       }
       if (!formData.description.trim()) {
         nextErrors.description = "Introduction is required";
@@ -210,35 +256,57 @@ function AdminArticleFormPage() {
   }
 
   async function saveArticle(status) {
-    if (!validateForm(status)) {
+    if (!validateForm(status) || isLoading) {
       return;
     }
 
     if (isEditMode) {
-      const payload = {
-        ...formData,
-        status,
-      };
+      // ถ้ายังไม่เลือกไฟล์ใหม่ ต้องส่ง URL เดิมจาก server (ห้ามส่ง blob: preview)
+      const imageUrl =
+        imageFile || formData.image.startsWith("blob:")
+          ? ""
+          : formData.image;
 
-      const result = updateAdminArticle(articleId, payload);
-      if (!result.success) {
-        toast.error("Could not save article", {
-          description: result.error,
+      if (!imageFile && !imageUrl) {
+        toast.error("Thumbnail required", {
+          description: "Please upload a thumbnail image before saving.",
         });
         return;
       }
 
-      if (status === ARTICLE_STATUS.DRAFT) {
-        toast.success("Article saved as draft", {
-          description: "You can publish this article later.",
+      setIsLoading(true);
+      try {
+        const result = await updateAdminArticle(articleId, {
+          title: formData.title,
+          category: formData.category,
+          description: formData.description,
+          content: formData.content,
+          status,
+          image: imageUrl,
+          imageFile: imageFile || undefined,
         });
-      } else {
-        toast.success("Article published", {
-          description: "Your article has been successfully published.",
-        });
-      }
 
-      navigate("/admin/articles");
+        if (!result.success) {
+          toast.error("Could not save article", {
+            description: result.error,
+          });
+          return;
+        }
+
+        if (status === ARTICLE_STATUS.DRAFT) {
+          toast.success("Article saved as draft", {
+            description: "You can publish this article later.",
+          });
+        } else {
+          toast.success("Article published", {
+            description: "Your article has been successfully published.",
+          });
+        }
+
+        navigate("/admin/articles");
+      } finally {
+        setIsLoading(false);
+      }
       return;
     }
 
@@ -283,8 +351,13 @@ function AdminArticleFormPage() {
     }
   }
 
-  function handleConfirmDelete() {
-    const result = deleteAdminArticle(articleId);
+  async function handleConfirmDelete() {
+    if (isDeleting) return;
+
+    setIsDeleting(true);
+    const result = await deleteAdminArticle(articleId);
+    setIsDeleting(false);
+
     if (!result.success) {
       toast.error("Could not delete article", {
         description: result.error,
@@ -297,6 +370,14 @@ function AdminArticleFormPage() {
       description: "The article has been removed successfully.",
     });
     navigate("/admin/articles");
+  }
+
+  if (isFetching) {
+    return (
+      <section className="px-6 py-8 md:px-10 md:py-10">
+        <p className="text-sm text-stone-500">Loading article...</p>
+      </section>
+    );
   }
 
   return (
@@ -382,8 +463,8 @@ function AdminArticleFormPage() {
             </SelectTrigger>
             <SelectContent>
               {categories.map((category) => (
-                <SelectItem key={category} value={category}>
-                  {category}
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -391,25 +472,6 @@ function AdminArticleFormPage() {
           {errors.category && (
             <p className="text-sm text-red-500" role="alert">
               {errors.category}
-            </p>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="author" className="text-stone-800">
-            Author name
-          </Label>
-          <Input
-            id="author"
-            name="author"
-            value={formData.author}
-            onChange={handleChange}
-            className="h-11 rounded-xl border-stone-300 bg-white"
-            aria-invalid={Boolean(errors.author)}
-          />
-          {errors.author && (
-            <p className="text-sm text-red-500" role="alert">
-              {errors.author}
             </p>
           )}
         </div>
@@ -529,8 +591,9 @@ function AdminArticleFormPage() {
               type="button"
               className="h-11 rounded-full bg-stone-950 px-8 text-base font-medium text-white hover:bg-stone-800"
               onClick={handleConfirmDelete}
+              disabled={isDeleting}
             >
-              Delete
+              {isDeleting ? "Deleting..." : "Delete"}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

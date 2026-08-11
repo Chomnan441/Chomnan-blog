@@ -6,12 +6,21 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/context/AuthContext";
 import { DEFAULT_AVATAR } from "@/lib/auth";
+import {
+  fetchSiteSettings,
+  updateSiteSettings,
+} from "@/lib/siteSettingsApi";
 
 const BIO_MAX = 120;
+
+const DEFAULT_HERO_IMAGE = "https://i.ibb.co/Z1wqS9vj/Profile.jpg";
+const DEFAULT_HERO_HOVER = "https://i.ibb.co/W48T8Vpw/Profile-Hover.png";
 
 function AdminProfilePage() {
   const { user, updateProfile } = useAuth();
   const fileInputRef = useRef(null);
+  const heroImageInputRef = useRef(null);
+  const heroHoverInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
     name: user?.name || "",
@@ -21,6 +30,17 @@ function AdminProfilePage() {
     bio: user?.bio || "",
   });
   const [errors, setErrors] = useState({});
+
+  // รูป Hero จาก site_settings (ไม่ใช่โปรไฟล์)
+  const [heroImageUrl, setHeroImageUrl] = useState(null);
+  const [heroHoverUrl, setHeroHoverUrl] = useState(null);
+  const [heroImageFile, setHeroImageFile] = useState(null);
+  const [heroHoverFile, setHeroHoverFile] = useState(null);
+  const [heroImagePreview, setHeroImagePreview] = useState("");
+  const [heroHoverPreview, setHeroHoverPreview] = useState("");
+  const [clearHeroImage, setClearHeroImage] = useState(false);
+  const [clearHeroHover, setClearHeroHover] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -33,6 +53,34 @@ function AdminProfilePage() {
       bio: user.bio || "",
     });
   }, [user]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadHeroSettings() {
+      try {
+        const settings = await fetchSiteSettings();
+        if (cancelled) return;
+        setHeroImageUrl(settings.heroImage);
+        setHeroHoverUrl(settings.heroImageHover);
+      } catch {
+        if (cancelled) return;
+        toast.error("Could not load hero images");
+      }
+    }
+
+    loadHeroSettings();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (heroImagePreview) URL.revokeObjectURL(heroImagePreview);
+      if (heroHoverPreview) URL.revokeObjectURL(heroHoverPreview);
+    };
+  }, [heroImagePreview, heroHoverPreview]);
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -66,7 +114,48 @@ function AdminProfilePage() {
     event.target.value = "";
   }
 
-  function handleSubmit(event) {
+  function pickHeroFile(event, kind) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Invalid file", {
+        description: "Please upload an image file",
+      });
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+
+    if (kind === "hero") {
+      if (heroImagePreview) URL.revokeObjectURL(heroImagePreview);
+      setHeroImageFile(file);
+      setHeroImagePreview(previewUrl);
+      setClearHeroImage(false);
+    } else {
+      if (heroHoverPreview) URL.revokeObjectURL(heroHoverPreview);
+      setHeroHoverFile(file);
+      setHeroHoverPreview(previewUrl);
+      setClearHeroHover(false);
+    }
+  }
+
+  function resetHeroToDefault(kind) {
+    if (kind === "hero") {
+      if (heroImagePreview) URL.revokeObjectURL(heroImagePreview);
+      setHeroImageFile(null);
+      setHeroImagePreview("");
+      setClearHeroImage(true);
+    } else {
+      if (heroHoverPreview) URL.revokeObjectURL(heroHoverPreview);
+      setHeroHoverFile(null);
+      setHeroHoverPreview("");
+      setClearHeroHover(true);
+    }
+  }
+
+  async function handleSubmit(event) {
     event.preventDefault();
 
     const nextErrors = {};
@@ -85,21 +174,60 @@ function AdminProfilePage() {
       return;
     }
 
-    const result = updateProfile({
+    setIsSaving(true);
+
+    const profileResult = await updateProfile({
       name: formData.name,
       username: formData.username,
       avatar: formData.avatar || DEFAULT_AVATAR,
       bio: formData.bio,
     });
 
-    if (!result.success) {
-      setErrors({ form: result.error });
+    if (!profileResult.success) {
+      setIsSaving(false);
+      setErrors({ form: profileResult.error });
       toast.error("Could not save profile", {
-        description: result.error,
+        description: profileResult.error,
       });
       return;
     }
 
+    const heroChanged =
+      heroImageFile ||
+      heroHoverFile ||
+      clearHeroImage ||
+      clearHeroHover;
+
+    if (heroChanged) {
+      const settingsResult = await updateSiteSettings({
+        heroImageFile,
+        heroImageHoverFile: heroHoverFile,
+        clearHeroImage,
+        clearHeroImageHover: clearHeroHover,
+      });
+
+      if (!settingsResult.success) {
+        setIsSaving(false);
+        setErrors({ form: settingsResult.error });
+        toast.error("Profile saved, but hero images failed", {
+          description: settingsResult.error,
+        });
+        return;
+      }
+
+      setHeroImageUrl(settingsResult.heroImage);
+      setHeroHoverUrl(settingsResult.heroImageHover);
+      if (heroImagePreview) URL.revokeObjectURL(heroImagePreview);
+      if (heroHoverPreview) URL.revokeObjectURL(heroHoverPreview);
+      setHeroImageFile(null);
+      setHeroHoverFile(null);
+      setHeroImagePreview("");
+      setHeroHoverPreview("");
+      setClearHeroImage(false);
+      setClearHeroHover(false);
+    }
+
+    setIsSaving(false);
     setErrors({});
     toast.success("Saved profile", {
       description: "Your profile has been successfully updated",
@@ -107,6 +235,14 @@ function AdminProfilePage() {
   }
 
   const previewAvatar = formData.avatar || DEFAULT_AVATAR;
+  const displayHeroImage =
+    heroImagePreview ||
+    (!clearHeroImage && heroImageUrl) ||
+    DEFAULT_HERO_IMAGE;
+  const displayHeroHover =
+    heroHoverPreview ||
+    (!clearHeroHover && heroHoverUrl) ||
+    DEFAULT_HERO_HOVER;
 
   return (
     <section className="px-6 py-8 md:px-10 md:py-10">
@@ -115,9 +251,10 @@ function AdminProfilePage() {
         <Button
           type="submit"
           form="admin-profile-form"
+          disabled={isSaving}
           className="h-11 rounded-full bg-stone-950 px-8 text-base font-medium text-white hover:bg-stone-800"
         >
-          Save
+          {isSaving ? "Saving…" : "Save"}
         </Button>
       </header>
 
@@ -229,6 +366,82 @@ function AdminProfilePage() {
               {errors.bio}
             </p>
           )}
+        </div>
+
+        <div className="flex flex-col gap-3 border-t border-stone-200 pt-6">
+          <h2 className="text-lg font-semibold text-stone-950">Hero images</h2>
+          <p className="text-sm text-stone-500">
+            Used on the homepage hero. If empty, the site default images are
+            shown.
+          </p>
+
+          <div className="flex flex-col gap-2">
+            <Label className="text-stone-600">Hero image</Label>
+            <img
+              src={displayHeroImage}
+              alt="Hero image preview"
+              className="aspect-3/4 w-40 rounded-2xl object-cover shadow-md"
+            />
+            <input
+              ref={heroImageInputRef}
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              onChange={(event) => pickHeroFile(event, "hero")}
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10 rounded-full border-stone-950 bg-white px-4 text-sm font-medium text-stone-950 hover:bg-stone-100"
+                onClick={() => heroImageInputRef.current?.click()}
+              >
+                Upload hero image
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-10 rounded-full px-4 text-sm text-stone-600"
+                onClick={() => resetHeroToDefault("hero")}
+              >
+                Use default
+              </Button>
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-col gap-2">
+            <Label className="text-stone-600">Hero image (hover)</Label>
+            <img
+              src={displayHeroHover}
+              alt="Hero hover image preview"
+              className="aspect-3/4 w-40 rounded-2xl object-cover shadow-md"
+            />
+            <input
+              ref={heroHoverInputRef}
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              onChange={(event) => pickHeroFile(event, "hover")}
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10 rounded-full border-stone-950 bg-white px-4 text-sm font-medium text-stone-950 hover:bg-stone-100"
+                onClick={() => heroHoverInputRef.current?.click()}
+              >
+                Upload hover image
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-10 rounded-full px-4 text-sm text-stone-600"
+                onClick={() => resetHeroToDefault("hover")}
+              >
+                Use default
+              </Button>
+            </div>
+          </div>
         </div>
 
         {errors.form && (
