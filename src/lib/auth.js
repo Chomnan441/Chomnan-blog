@@ -20,7 +20,13 @@ export function validateEmail(email) {
  * ตรวจฟอร์มสมัครฝั่ง client ก่อนยิง API
  * (ไม่เช็ก email ซ้ำใน localStorage แล้ว — ให้ server เป็นคนตัดสิน)
  */
-export function validateSignUpFields({ name, username, email, password }) {
+export function validateSignUpFields({
+  name,
+  username,
+  email,
+  password,
+  confirmPassword,
+}) {
   const errors = {};
 
   if (!name.trim()) {
@@ -41,6 +47,12 @@ export function validateSignUpFields({ name, username, email, password }) {
     errors.password = "Password is required";
   } else if (password.length < 6) {
     errors.password = "Password must be at least 6 characters";
+  }
+
+  if (!confirmPassword) {
+    errors.confirmPassword = "Please confirm your password";
+  } else if (password !== confirmPassword) {
+    errors.confirmPassword = "Passwords do not match";
   }
 
   return errors;

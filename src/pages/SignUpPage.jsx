@@ -14,6 +14,7 @@ function SignUpPage() {
     username: "",
     email: "",
     password: "",
+    confirmPassword: "",
   });
   const [errors, setErrors] = useState({});
 
@@ -79,6 +80,16 @@ function SignUpPage() {
             value={formData.password}
             onChange={handleChange}
             error={errors.password}
+            autoComplete="new-password"
+          />
+          <AuthFormField
+            id="confirmPassword"
+            label="Confirm password"
+            type="password"
+            placeholder="Confirm password"
+            value={formData.confirmPassword}
+            onChange={handleChange}
+            error={errors.confirmPassword}
             autoComplete="new-password"
           />
 
