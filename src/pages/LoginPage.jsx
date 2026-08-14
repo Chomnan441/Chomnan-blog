@@ -71,6 +71,15 @@ function LoginPage() {
             autoComplete="current-password"
           />
 
+          <p className="-mt-2 text-right text-sm">
+            <Link
+              to="/forgot-password"
+              className="font-medium text-stone-600 underline underline-offset-2 hover:text-stone-950"
+            >
+              Forgot password?
+            </Link>
+          </p>
+
           <Button
             type="submit"
             className="mt-2 h-12 w-full rounded-full bg-stone-950 text-base font-medium text-white hover:bg-stone-800"

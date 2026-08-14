@@ -1,4 +1,11 @@
-import { api, clearAccessToken, getAccessToken, setAccessToken } from "@/lib/api";
+import axios from "axios";
+import {
+  api,
+  API_BASE_URL,
+  clearAccessToken,
+  getAccessToken,
+  setAccessToken,
+} from "@/lib/api";
 import { ADMIN_ROLE, DEFAULT_AVATAR, USER_ROLE } from "@/lib/auth";
 
 function getErrorMessage(error, fallback) {
@@ -78,6 +85,48 @@ export async function fetchSiteAuthor() {
         ? response.data.profilePic
         : "",
   };
+}
+
+/** ขอลิงก์รีเซ็ตรหัสทางอีเมล (ลืมรหัส — ยังไม่ login) */
+export async function forgotPasswordWithApi(email) {
+  try {
+    const response = await api.post("/auth/forgot-password", {
+      email: email.trim().toLowerCase(),
+    });
+    return {
+      success: true,
+      message: response.data?.message || "Reset link sent",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to send reset email"),
+    };
+  }
+}
+
+/**
+ * ตั้งรหัสใหม่จากลิงก์ในอีเมล
+ * ต้องส่งทั้ง access + refresh token เพื่อ setSession ก่อน updateUser
+ */
+export async function recoveryPasswordWithApi({
+  accessToken,
+  refreshToken,
+  password,
+}) {
+  try {
+    await axios.post(`${API_BASE_URL}/auth/recovery-password`, {
+      accessToken,
+      refreshToken,
+      password,
+    });
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to update password"),
+    };
+  }
 }
 
 /** เปลี่ยนรหัสผ่าน (ต้องส่ง token + รหัสเก่า) */

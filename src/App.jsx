@@ -4,6 +4,8 @@ import ViewPostPage from "@/pages/ViewPostPage";
 import NotFoundPage from "@/pages/NotFoundPage";
 import SignUpPage from "@/pages/SignUpPage";
 import LoginPage from "@/pages/LoginPage";
+import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
+import RecoveryPasswordPage from "@/pages/RecoveryPasswordPage";
 import RegistrationSuccessPage from "@/pages/RegistrationSuccessPage";
 import ProfilePage from "@/pages/ProfilePage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
@@ -25,6 +27,8 @@ function App() {
       <Route path="/sign-up" element={<SignUpPage />} />
       <Route path="/sign-up/success" element={<RegistrationSuccessPage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/auth/recovery" element={<RecoveryPasswordPage />} />
       <Route path="/post/:postId" element={<ViewPostPage />} />
       <Route
         path="/profile"
