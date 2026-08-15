@@ -155,8 +155,8 @@ export function AuthProvider({ children }) {
       const result = await updateProfileWithApi({
         name: profileData.name,
         username: profileData.username,
-        avatar: profileData.avatar,
         bio: profileData.bio,
+        avatarFile: profileData.avatarFile,
       });
 
       if (!result.success) {

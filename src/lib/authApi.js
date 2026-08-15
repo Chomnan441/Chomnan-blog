@@ -148,15 +148,24 @@ export async function resetPasswordWithApi({
   }
 }
 
-/** อัปเดตชื่อ / username / รูปโปรไฟล์ / bio */
-export async function updateProfileWithApi({ name, username, avatar, bio }) {
+/** อัปเดตชื่อ / username / bio + รูปโปรไฟล์ (multipart ถ้ามีไฟล์ใหม่) */
+export async function updateProfileWithApi({
+  name,
+  username,
+  bio,
+  avatarFile,
+}) {
   try {
-    const response = await api.put("/auth/profile", {
-      name,
-      username,
-      profilePic: avatar,
-      bio: typeof bio === "string" ? bio : "",
-    });
+    const formData = new FormData();
+    formData.append("name", name);
+    formData.append("username", username);
+    formData.append("bio", typeof bio === "string" ? bio : "");
+
+    if (avatarFile instanceof File) {
+      formData.append("profilePicFile", avatarFile);
+    }
+
+    const response = await api.put("/auth/profile", formData);
 
     return {
       success: true,

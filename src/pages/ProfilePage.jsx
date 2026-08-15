@@ -5,6 +5,7 @@ import AuthFormField from "@/components/AuthFormField";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { DEFAULT_AVATAR } from "@/lib/auth";
+import { resizeImageFile } from "@/lib/resizeImage";
 
 function ProfilePage() {
   const { user, updateProfile } = useAuth();
@@ -16,7 +17,10 @@ function ProfilePage() {
     email: user?.email || "",
     avatar: user?.avatar || DEFAULT_AVATAR,
   });
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState("");
   const [errors, setErrors] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -29,6 +33,12 @@ function ProfilePage() {
     });
   }, [user]);
 
+  useEffect(() => {
+    return () => {
+      if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+    };
+  }, [avatarPreview]);
+
   function handleChange(event) {
     const { name, value } = event.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -39,8 +49,9 @@ function ProfilePage() {
     fileInputRef.current?.click();
   }
 
-  function handleFileChange(event) {
+  async function handleFileChange(event) {
     const file = event.target.files?.[0];
+    event.target.value = "";
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
@@ -50,15 +61,19 @@ function ProfilePage() {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      setFormData((prev) => ({
-        ...prev,
-        avatar: typeof reader.result === "string" ? reader.result : prev.avatar,
-      }));
-    };
-    reader.readAsDataURL(file);
-    event.target.value = "";
+    try {
+      const resized = await resizeImageFile(file, {
+        maxSize: 512,
+        quality: 0.85,
+      });
+      if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+      setAvatarFile(resized);
+      setAvatarPreview(URL.createObjectURL(resized));
+    } catch (error) {
+      toast.error("Could not process image", {
+        description: error.message || "Please try another image",
+      });
+    }
   }
 
   async function handleSubmit(event) {
@@ -77,11 +92,15 @@ function ProfilePage() {
       return;
     }
 
+    setIsSaving(true);
+
     const result = await updateProfile({
       name: formData.name,
       username: formData.username,
-      avatar: formData.avatar || DEFAULT_AVATAR,
+      avatarFile,
     });
+
+    setIsSaving(false);
 
     if (!result.success) {
       setErrors({ form: result.error });
@@ -91,13 +110,17 @@ function ProfilePage() {
       return;
     }
 
+    if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+    setAvatarFile(null);
+    setAvatarPreview("");
     setErrors({});
     toast.success("Saved profile", {
       description: "Your profile has been successfully updated",
     });
   }
 
-  const previewAvatar = formData.avatar || DEFAULT_AVATAR;
+  const previewAvatar =
+    avatarPreview || formData.avatar || DEFAULT_AVATAR;
 
   return (
     <AccountLayout title="Profile">
@@ -169,9 +192,10 @@ function ProfilePage() {
 
           <Button
             type="submit"
+            disabled={isSaving}
             className="mt-2 h-11 w-fit rounded-full bg-stone-950 px-8 text-base font-medium text-white hover:bg-stone-800"
           >
-            Save
+            {isSaving ? "Saving…" : "Save"}
           </Button>
         </div>
       </form>
