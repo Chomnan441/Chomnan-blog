@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/context/AuthContext";
 import { DEFAULT_AVATAR } from "@/lib/auth";
+import { resizeImageFile } from "@/lib/resizeImage";
 import {
   fetchSiteSettings,
   updateSiteSettings,
@@ -29,6 +30,8 @@ function AdminProfilePage() {
     avatar: user?.avatar || DEFAULT_AVATAR,
     bio: user?.bio || "",
   });
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState("");
   const [errors, setErrors] = useState({});
 
   // รูป Hero จาก site_settings (ไม่ใช่โปรไฟล์)
@@ -77,10 +80,11 @@ function AdminProfilePage() {
 
   useEffect(() => {
     return () => {
+      if (avatarPreview) URL.revokeObjectURL(avatarPreview);
       if (heroImagePreview) URL.revokeObjectURL(heroImagePreview);
       if (heroHoverPreview) URL.revokeObjectURL(heroHoverPreview);
     };
-  }, [heroImagePreview, heroHoverPreview]);
+  }, [avatarPreview, heroImagePreview, heroHoverPreview]);
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -92,8 +96,9 @@ function AdminProfilePage() {
     fileInputRef.current?.click();
   }
 
-  function handleFileChange(event) {
+  async function handleFileChange(event) {
     const file = event.target.files?.[0];
+    event.target.value = "";
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
@@ -103,15 +108,19 @@ function AdminProfilePage() {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      setFormData((prev) => ({
-        ...prev,
-        avatar: typeof reader.result === "string" ? reader.result : prev.avatar,
-      }));
-    };
-    reader.readAsDataURL(file);
-    event.target.value = "";
+    try {
+      const resized = await resizeImageFile(file, {
+        maxSize: 512,
+        quality: 0.85,
+      });
+      if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+      setAvatarFile(resized);
+      setAvatarPreview(URL.createObjectURL(resized));
+    } catch (error) {
+      toast.error("Could not process image", {
+        description: error.message || "Please try another image",
+      });
+    }
   }
 
   function pickHeroFile(event, kind) {
@@ -179,8 +188,8 @@ function AdminProfilePage() {
     const profileResult = await updateProfile({
       name: formData.name,
       username: formData.username,
-      avatar: formData.avatar || DEFAULT_AVATAR,
       bio: formData.bio,
+      avatarFile,
     });
 
     if (!profileResult.success) {
@@ -191,6 +200,10 @@ function AdminProfilePage() {
       });
       return;
     }
+
+    if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+    setAvatarFile(null);
+    setAvatarPreview("");
 
     const heroChanged =
       heroImageFile ||
@@ -234,7 +247,8 @@ function AdminProfilePage() {
     });
   }
 
-  const previewAvatar = formData.avatar || DEFAULT_AVATAR;
+  const previewAvatar =
+    avatarPreview || formData.avatar || DEFAULT_AVATAR;
   const displayHeroImage =
     heroImagePreview ||
     (!clearHeroImage && heroImageUrl) ||
