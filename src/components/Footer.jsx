@@ -51,17 +51,17 @@ function GoogleIcon({ className }) {
 const socialLinks = [
   {
     label: "LinkedIn",
-    href: "https://www.linkedin.com/",
+    href: "https://www.linkedin.com/in/chomnan-phokhawatchanan-5b42b8420/",
     icon: LinkedInIcon,
   },
   {
     label: "GitHub",
-    href: "https://github.com/",
+    href: "https://github.com/Chomnan441",
     icon: GitHubIcon,
   },
   {
-    label: "Google",
-    href: "https://www.google.com/",
+    label: "Email",
+    href: "https://mail.google.com/mail/?view=cm&fs=1&to=chomnan415@gmail.com",
     icon: GoogleIcon,
   },
 ];
