@@ -21,7 +21,8 @@ import logo from "@/assets/logo.svg";
 import logoHover from "@/assets/logo-hoverNew.gif";
 
 function NavBar() {
-  const { user, isAdmin, logout } = useAuth();
+  const { user, isAdmin, authStatus, logout } = useAuth();
+  const isAuthenticated = authStatus === "authenticated" && user;
   const navigate = useNavigate();
   // State (useState) — เปิด/ปิด UI
   const [isMenuOpen, setIsMenuOpen] = useState(false); // เมนูมือถือ (hamburger) ของคนที่ยังไม่ล็อกอิน
@@ -43,7 +44,7 @@ function NavBar() {
 
   // โหลดแจ้งเตือนเมื่อล็อกอินแล้ว
   useEffect(() => {
-    if (!user) {
+    if (!isAuthenticated) {
       setNotifications([]);
       setHasUnread(false);
       return;
@@ -62,7 +63,7 @@ function NavBar() {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [isAuthenticated]);
 
   async function handleOpenNotifications() {
     const nextOpen = !isNotificationsOpen;
@@ -144,7 +145,7 @@ function NavBar() {
 
         {/* ถ้ามี user แสดงรูปภาพผู้ใช้งาน และ dropdown โปรไฟล์ */}
         {/* ternary operator */}
-        {user ? (
+        {isAuthenticated ? (
           <div className="flex items-center gap-3 md:gap-4">
             {/* notifications */}
             <div className="relative" ref={notificationsRef}>
@@ -347,7 +348,7 @@ function NavBar() {
       </nav>
 
       {/* หลังจากกด button เมนูมือถือ (hamburger) แสดง menu มือถือ */}
-      {!user && isMenuOpen && (
+      {!isAuthenticated && isMenuOpen && (
         <div
           id="mobile-menu"
           className="border-t border-stone-300/60 bg-blog-page px-4 py-4 md:hidden"
