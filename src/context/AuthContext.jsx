@@ -8,15 +8,13 @@ import {
 } from "react";
 import {
   clearSession,
-  getStoredSession,
   isAdmin as checkIsAdmin,
   saveSession,
   validateSignUpFields,
 } from "@/lib/auth";
-import { getAccessToken } from "@/lib/api";
+import { getAccessToken, setUnauthorizedHandler } from "@/lib/api";
 import {
   fetchCurrentUser,
-  getErrorMessage,
   loginWithApi,
   logoutApiSession,
   registerWithApi,
@@ -26,9 +24,29 @@ import {
 
 const AuthContext = createContext(null);
 
+function getInitialAuthStatus() {
+  return getAccessToken() ? "loading" : "anonymous";
+}
+
 export function AuthProvider({ children }) {
-  // เปิดหน้า → ใช้แคชก่อน (เร็ว) แล้วค่อยยืนยันกับ server
-  const [user, setUser] = useState(() => getStoredSession());
+  const [user, setUser] = useState(null);
+  const [authStatus, setAuthStatus] = useState(getInitialAuthStatus);
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      logoutApiSession();
+      clearSession();
+      setUser(null);
+      setAuthStatus("anonymous");
+      if (!window.location.pathname.startsWith("/login")) {
+        window.location.assign("/login");
+      }
+    });
+
+    return () => {
+      setUnauthorizedHandler(null);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -36,13 +54,17 @@ export function AuthProvider({ children }) {
     async function restoreSession() {
       const token = getAccessToken();
 
-      // ไม่มี token = ยังไม่ล็อกอินจริง → เคลียร์แคชเก่า
       if (!token) {
         if (!cancelled) {
           setUser(null);
+          setAuthStatus("anonymous");
           clearSession();
         }
         return;
+      }
+
+      if (!cancelled) {
+        setAuthStatus("loading");
       }
 
       try {
@@ -51,11 +73,13 @@ export function AuthProvider({ children }) {
 
         setUser(profile);
         saveSession(profile);
+        setAuthStatus("authenticated");
       } catch {
         if (cancelled) return;
         logoutApiSession();
         clearSession();
         setUser(null);
+        setAuthStatus("anonymous");
       }
     }
 
@@ -71,9 +95,12 @@ export function AuthProvider({ children }) {
       const authenticatedUser = await loginWithApi(email, password);
       setUser(authenticatedUser);
       saveSession(authenticatedUser);
+      setAuthStatus("authenticated");
       return true;
     } catch {
       logoutApiSession();
+      setUser(null);
+      setAuthStatus("anonymous");
       return false;
     }
   }, []);
@@ -99,6 +126,7 @@ export function AuthProvider({ children }) {
 
       setUser(authenticatedUser);
       saveSession(authenticatedUser);
+      setAuthStatus("authenticated");
 
       return { success: true, user: authenticatedUser };
     } catch (error) {
@@ -138,10 +166,12 @@ export function AuthProvider({ children }) {
     if (!registeredUser) return;
     setUser(registeredUser);
     saveSession(registeredUser);
+    setAuthStatus("authenticated");
   }, []);
 
   const logout = useCallback(() => {
     setUser(null);
+    setAuthStatus("anonymous");
     clearSession();
     logoutApiSession();
   }, []);
@@ -199,11 +229,13 @@ export function AuthProvider({ children }) {
     [user],
   );
 
-  const isAdmin = checkIsAdmin(user);
+  const isAdmin =
+    authStatus === "authenticated" && checkIsAdmin(user);
 
   const value = useMemo(
     () => ({
       user,
+      authStatus,
       isAdmin,
       login,
       signUp,
@@ -214,6 +246,7 @@ export function AuthProvider({ children }) {
     }),
     [
       user,
+      authStatus,
       isAdmin,
       login,
       signUp,

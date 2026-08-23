@@ -25,6 +25,12 @@ export const api = axios.create({
   baseURL: API_BASE_URL,
 });
 
+let unauthorizedHandler = null;
+
+export function setUnauthorizedHandler(handler) {
+  unauthorizedHandler = handler;
+}
+
 api.interceptors.request.use((config) => {
   const token = getAccessToken();
   if (token) {
@@ -32,3 +38,14 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const hadAuthHeader = Boolean(error.config?.headers?.Authorization);
+    if (error.response?.status === 401 && hadAuthHeader) {
+      unauthorizedHandler?.();
+    }
+    return Promise.reject(error);
+  },
+);
