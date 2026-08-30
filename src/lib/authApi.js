@@ -1,7 +1,5 @@
-import axios from "axios";
 import {
   api,
-  API_BASE_URL,
   clearAccessToken,
   getAccessToken,
   setAccessToken,
@@ -115,7 +113,7 @@ export async function recoveryPasswordWithApi({
   password,
 }) {
   try {
-    await axios.post(`${API_BASE_URL}/auth/recovery-password`, {
+    await api.post("/auth/recovery-password", {
       accessToken,
       refreshToken,
       password,

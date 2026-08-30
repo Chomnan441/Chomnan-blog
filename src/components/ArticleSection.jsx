@@ -4,8 +4,6 @@
 // useEffect = Hook สำหรับทำ side effect (เช่น เรียก API) หลัง component render
 // useState = Hook สำหรับเก็บ state (ข้อมูลที่เปลี่ยนได้) ใน component
 import { useEffect, useState } from "react";
-// axios = library สำหรับส่ง HTTP request ไปยัง server (ดึงข้อมูลบทความจาก API)
-import axios from "axios";
 // Search = ไอคอนแว่นขยายจาก lucide-react ใช้ในช่องค้นหา
 import ArticleSearch from "@/components/ArticleSearch";
 import { Label } from "@/components/ui/label";
@@ -25,9 +23,9 @@ import { formatBlogDate } from "@/lib/formatDate";
 // cn = helper รวม className ของ Tailwind (ใช้กับปุ่มหมวดหมู่ที่เปลี่ยนสีตามสถานะ)
 import { cn } from "@/lib/utils";
 
-import { API_BASE_URL } from "@/lib/api";
 import { DEFAULT_AVATAR } from "@/lib/auth";
 import { fetchCategoryNames } from "@/lib/adminCategories";
+import { fetchPublicPosts } from "@/lib/postsApi";
 
 // จำนวนบทความที่โหลดต่อ 1 ครั้ง — ใช้กับ query params page และ limit ของ API
 const ARTICLES_PER_PAGE = 6;
@@ -151,11 +149,9 @@ function ArticleSection() {
           // // → ?page=1&limit=6&category=Cat
         };
 
-        // axios.get = ส่ง GET request ไปยัง API
-        // params = query string เช่น ?page=1&limit=6&category=Cat
         // signal = เชื่อมกับ AbortController เพื่อยกเลิก request ได้
-        const { data } = await axios.get(`${API_BASE_URL}/posts`, {
-          params,
+        const data = await fetchPublicPosts({
+          ...params,
           signal: controller.signal,
         });
 
@@ -205,7 +201,7 @@ function ArticleSection() {
         ...(categoryParam ? { category: categoryParam } : {}),
       };
 
-      const { data } = await axios.get(`${API_BASE_URL}/posts`, { params });
+      const data = await fetchPublicPosts(params);
       const newArticles = data.posts.map(mapPostToArticle);
 
       // [...prev, ...newArticles] = เอาของเก่า + ของใหม่รวมกันใน state
