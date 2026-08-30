@@ -8,14 +8,11 @@
 import { useEffect, useRef, useState } from "react";
 // useNavigate = Hook จาก react-router-dom สำหรับเปลี่ยนหน้าโดยไม่ reload ทั้งเว็บ
 import { useNavigate } from "react-router-dom";
-// axios = library สำหรับส่ง HTTP request ไปยัง server (ดึงข้อมูลบทความจาก API)
-import axios from "axios";
 // Search = ไอคอนแว่นขยายจาก lucide-react แสดงด้านขวาของช่องค้นหา
 import { Search } from "lucide-react";
 // Input = ช่องกรอกข้อความจาก shadcn/ui
 import { Input } from "@/components/ui/input";
-// API_BASE_URL = URL ฐานของ API เช่น "https://blog-post-project-api.vercel.app"
-import { API_BASE_URL } from "@/lib/api";
+import { fetchPublicPosts } from "@/lib/postsApi";
 // cn = helper รวม className ของ Tailwind (ใช้กับรายการที่ highlight)
 import { cn } from "@/lib/utils";
 
@@ -62,9 +59,11 @@ function ArticleSearch({ className, inputClassName }) {
         // เรียก GET /posts?keyword=...&limit=6
         // keyword = คำค้น (API ค้นจาก title, description, content ให้)
         // limit = จำกัดผลลัพธ์สูงสุด 6 รายการ
-        const { data } = await axios.get(`${API_BASE_URL}/posts`, {
-          params: { keyword: trimmedQuery, limit: 6 },
-          signal: controller.signal, // เชื่อมกับ AbortController เพื่อยกเลิก request ได้
+        const data = await fetchPublicPosts({
+          page: 1,
+          keyword: trimmedQuery,
+          limit: 6,
+          signal: controller.signal,
         });
         setResults(data.posts);
         setIsOpen(true); // เปิด dropdown แสดงผลลัพธ์

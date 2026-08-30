@@ -32,6 +32,10 @@ export function setUnauthorizedHandler(handler) {
 }
 
 api.interceptors.request.use((config) => {
+  if (config.skipAuth) {
+    return config;
+  }
+
   const token = getAccessToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
