@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Pencil, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
@@ -24,7 +24,6 @@ import {
   deleteAdminArticle,
   fetchAdminArticles,
   fetchPostLookups,
-  filterAdminArticles,
 } from "@/lib/adminArticles";
 import { cn } from "@/lib/utils";
 
@@ -38,27 +37,51 @@ function AdminArticlesPage() {
   const [articleToDelete, setArticleToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalPosts, setTotalPosts] = useState(0);
 
-  async function loadArticles() {
-    setIsLoading(true);
-    const result = await fetchAdminArticles();
-
-    if (!result.success) {
-      toast.error("Could not load articles", {
-        description: result.error,
+  const loadArticles = useCallback(
+    async (targetPage = page) => {
+      setIsLoading(true);
+      const result = await fetchAdminArticles({
+        page: targetPage,
+        keyword,
+        category: categoryFilter,
+        status: statusFilter,
       });
-      setArticles([]);
-    } else {
-      setArticles(result.articles);
-    }
 
-    setIsLoading(false);
-  }
+      if (!result.success) {
+        toast.error("Could not load articles", {
+          description: result.error,
+        });
+        setArticles([]);
+        setTotalPages(0);
+        setTotalPosts(0);
+        setIsLoading(false);
+        return;
+      }
+
+      if (result.articles.length === 0 && targetPage > 1) {
+        setPage(targetPage - 1);
+        return;
+      }
+
+      setArticles(result.articles);
+      setTotalPages(result.totalPages);
+      setTotalPosts(result.totalPosts);
+      setIsLoading(false);
+    },
+    [page, keyword, statusFilter, categoryFilter],
+  );
 
   useEffect(() => {
-    loadArticles();
+    loadArticles(page);
+  }, [page, loadArticles]);
 
+  useEffect(() => {
     let cancelled = false;
+
     async function loadCategories() {
       try {
         const lookups = await fetchPostLookups();
@@ -69,21 +92,27 @@ function AdminArticlesPage() {
         if (!cancelled) setCategories([]);
       }
     }
+
     loadCategories();
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const filteredArticles = useMemo(
-    () =>
-      filterAdminArticles(articles, {
-        keyword,
-        status: statusFilter,
-        category: categoryFilter,
-      }),
-    [articles, keyword, statusFilter, categoryFilter],
-  );
+  function handleKeywordChange(event) {
+    setKeyword(event.target.value);
+    setPage(1);
+  }
+
+  function handleStatusFilterChange(value) {
+    setStatusFilter(value);
+    setPage(1);
+  }
+
+  function handleCategoryFilterChange(value) {
+    setCategoryFilter(value);
+    setPage(1);
+  }
 
   async function handleConfirmDelete() {
     if (!articleToDelete || isDeleting) return;
@@ -103,7 +132,7 @@ function AdminArticlesPage() {
     toast.success("Article deleted", {
       description: "The article has been removed successfully.",
     });
-    await loadArticles();
+    await loadArticles(page);
   }
 
   return (
@@ -129,7 +158,7 @@ function AdminArticlesPage() {
           <Input
             type="search"
             value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
+            onChange={handleKeywordChange}
             placeholder="Search..."
             aria-label="Search articles"
             className="h-11 rounded-lg border-stone-200 bg-white pl-10"
@@ -137,7 +166,7 @@ function AdminArticlesPage() {
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
             <SelectTrigger
               className="h-11 min-w-36 rounded-lg border-stone-200 bg-white px-3"
               aria-label="Filter by status"
@@ -153,7 +182,10 @@ function AdminArticlesPage() {
             </SelectContent>
           </Select>
 
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <Select
+            value={categoryFilter}
+            onValueChange={handleCategoryFilterChange}
+          >
             <SelectTrigger
               className="h-11 min-w-36 rounded-lg border-stone-200 bg-white px-3"
               aria-label="Filter by category"
@@ -194,7 +226,7 @@ function AdminArticlesPage() {
                   Loading articles...
                 </td>
               </tr>
-            ) : filteredArticles.length === 0 ? (
+            ) : articles.length === 0 ? (
               <tr>
                 <td
                   colSpan={4}
@@ -204,7 +236,7 @@ function AdminArticlesPage() {
                 </td>
               </tr>
             ) : (
-              filteredArticles.map((article) => {
+              articles.map((article) => {
                 const isPublished =
                   article.status === ARTICLE_STATUS.PUBLISHED;
 
@@ -265,6 +297,38 @@ function AdminArticlesPage() {
           </tbody>
         </table>
       </div>
+
+      {!isLoading && totalPages > 1 && (
+        <nav
+          className="mt-6 flex flex-wrap items-center justify-between gap-4"
+          aria-label="Article list pagination"
+        >
+          <p className="text-sm text-stone-500">
+            Page {page} of {totalPages}
+            {totalPosts > 0 ? ` (${totalPosts} articles)` : ""}
+          </p>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10 rounded-lg border-stone-200 px-4"
+              disabled={page <= 1}
+              onClick={() => setPage((current) => current - 1)}
+            >
+              Previous
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10 rounded-lg border-stone-200 px-4"
+              disabled={page >= totalPages}
+              onClick={() => setPage((current) => current + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        </nav>
+      )}
 
       <AlertDialog
         open={Boolean(articleToDelete)}

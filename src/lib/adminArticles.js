@@ -1,6 +1,8 @@
 import { ARTICLE_STATUS } from "@/data/categories";
 import { api } from "@/lib/api";
 
+export const ADMIN_ARTICLES_PAGE_SIZE = 15;
+
 /**
  * แปลงสถานะจาก DB → ค่าที่ UI ใช้
  * DB อาจเก็บ "publish" ส่วน UI ใช้ "published"
@@ -85,24 +87,48 @@ function getErrorMessage(error, fallback) {
   );
 }
 
-/** ดึงรายการบทความทั้งหมดจาก API (สำหรับหน้า admin) */
-export async function fetchAdminArticles() {
+/** ดึงรายการบทความจาก API (สำหรับหน้า admin — pagination + filter ฝั่ง server) */
+export async function fetchAdminArticles({
+  page = 1,
+  limit = ADMIN_ARTICLES_PAGE_SIZE,
+  keyword = "",
+  category = "all",
+  status = "all",
+} = {}) {
   try {
-    // limit สูงเพื่อให้ admin เห็นครบในรอบเดียว (หน้าบ้านยังใช้ limit 6)
-    const { data } = await api.get("/posts", {
-      params: { page: 1, limit: 100 },
-    });
+    const params = { page, limit };
+    const trimmedKeyword = keyword.trim();
+
+    if (trimmedKeyword) {
+      params.keyword = trimmedKeyword;
+    }
+
+    if (category && category !== "all") {
+      params.category = category;
+    }
+
+    if (status && status !== "all") {
+      params.status = status;
+    }
+
+    const { data } = await api.get("/posts", { params });
 
     const posts = Array.isArray(data?.posts) ? data.posts : [];
     return {
       success: true,
       articles: posts.map(mapApiPostToArticle),
+      currentPage: data.currentPage ?? page,
+      totalPages: data.totalPages ?? 0,
+      totalPosts: data.totalPosts ?? posts.length,
     };
   } catch (error) {
     return {
       success: false,
       error: getErrorMessage(error, "Failed to load articles"),
       articles: [],
+      currentPage: page,
+      totalPages: 0,
+      totalPosts: 0,
     };
   }
 }
