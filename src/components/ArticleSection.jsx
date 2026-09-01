@@ -19,13 +19,12 @@ import ArticleCard from "@/components/ArticleCard";
 // ArticleCardSkeleton = placeholder ขณะโหลด — รักษาความสูงกริดไม่ให้ scroll กระโดด
 import ArticleCardSkeleton from "@/components/ArticleCardSkeleton";
 // formatBlogDate = function แปลงวันที่ ISO เป็นข้อความอ่านง่าย เช่น "11 September 2024"
-import { formatBlogDate } from "@/lib/formatDate";
 // cn = helper รวม className ของ Tailwind (ใช้กับปุ่มหมวดหมู่ที่เปลี่ยนสีตามสถานะ)
 import { cn } from "@/lib/utils";
 
-import { DEFAULT_AVATAR } from "@/lib/auth";
 import { fetchCategoryNames } from "@/lib/adminCategories";
-import { fetchPublicPosts } from "@/lib/postsApi";
+import { fetchPublicPosts, mapPostToCard } from "@/lib/postsApi";
+import { getSiteAuthor } from "@/lib/siteAuthor";
 
 // จำนวนบทความที่โหลดต่อ 1 ครั้ง — ใช้กับ query params page และ limit ของ API
 const ARTICLES_PER_PAGE = 6;
@@ -35,22 +34,6 @@ const ARTICLE_GRID_CLASS =
   "mt-10 grid grid-cols-1 gap-10 md:grid-cols-2 md:gap-x-8 md:gap-y-12";
 
 const HIGHLIGHT_OPTION = { value: "highlight", label: "Highlight" };
-
-// mapPostToArticle = แปลงข้อมูลจาก API ให้ตรงกับ props ที่ ArticleCard ต้องการ
-function mapPostToArticle(post) {
-  return {
-    id: post.id,
-    category: post.category,
-    title: post.title,
-    excerpt: post.description,
-    author: post.author || "Unknown",
-    authorAvatar: post.author_image || DEFAULT_AVATAR,
-    date: formatBlogDate(post.date),
-    dateTime: post.date,
-    image: post.image,
-    imageAlt: post.title,
-  };
-}
 
 // Highlight = ไม่ส่ง category / หมวดอื่น = ส่งชื่อหมวดตรงๆ ให้ API
 function getCategoryParam(categoryValue) {
@@ -154,9 +137,10 @@ function ArticleSection() {
           ...params,
           signal: controller.signal,
         });
+        const siteAuthor = await getSiteAuthor();
 
         // data.posts = array บทความจาก API → map แปลงทีละชิ้นแล้วเก็บใน state
-        setArticles(data.posts.map(mapPostToArticle));
+        setArticles(data.posts.map((post) => mapPostToCard(post, siteAuthor)));
         // currentPage < totalPages = ยังมีหน้าถัดไป → แสดงปุ่ม View more ได้
         setHasMore(data.currentPage < data.totalPages);
       } catch {
@@ -202,7 +186,8 @@ function ArticleSection() {
       };
 
       const data = await fetchPublicPosts(params);
-      const newArticles = data.posts.map(mapPostToArticle);
+      const siteAuthor = await getSiteAuthor();
+      const newArticles = data.posts.map((post) => mapPostToCard(post, siteAuthor));
 
       // [...prev, ...newArticles] = เอาของเก่า + ของใหม่รวมกันใน state
       setArticles((prev) => [...prev, ...newArticles]);

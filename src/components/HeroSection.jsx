@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { fetchSiteAuthor } from "@/lib/authApi";
 import { fetchSiteSettings } from "@/lib/siteSettingsApi";
+import { getSiteAuthor } from "@/lib/siteAuthor";
 
 const HERO_IMAGE_URL = "https://i.ibb.co/Z1wqS9vj/Profile.jpg";
 const HERO_IMAGE_HOVER_URL = "https://i.ibb.co/W48T8Vpw/Profile-Hover.png";
@@ -22,7 +22,7 @@ function HeroSection() {
     async function loadHero() {
       try {
         const [siteAuthor, settings] = await Promise.all([
-          fetchSiteAuthor(),
+          getSiteAuthor(),
           fetchSiteSettings(),
         ]);
         if (cancelled) return;
