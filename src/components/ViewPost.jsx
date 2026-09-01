@@ -19,6 +19,8 @@ import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import { DEFAULT_AVATAR } from "@/lib/auth";
 import { formatBlogDate, formatCommentDate } from "@/lib/formatDate";
+import { resolvePostAuthor } from "@/lib/postsApi";
+import { getSiteAuthor } from "@/lib/siteAuthor";
 
 function FacebookIcon({ className }) {
   return (
@@ -61,6 +63,7 @@ function ViewPost() {
   const isLoggedIn = Boolean(user);
 
   const [post, setPost] = useState(null);
+  const [postAuthor, setPostAuthor] = useState(null);
   const [likes, setLikes] = useState(0);
   const [comments, setComments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -73,11 +76,16 @@ function ViewPost() {
       setIsLoading(true);
 
       try {
-        const { data } = await api.get(`/posts/${postId}`, {
-          signal: controller.signal,
-        });
+        const [postResponse, siteAuthor] = await Promise.all([
+          api.get(`/posts/${postId}`, {
+            signal: controller.signal,
+          }),
+          getSiteAuthor(),
+        ]);
+        const data = postResponse.data;
 
         setPost(data);
+        setPostAuthor(resolvePostAuthor(data, siteAuthor));
         setLikes(data.likes_count ?? data.likes ?? 0);
 
         try {
@@ -148,7 +156,7 @@ function ViewPost() {
     );
   }
 
-  if (!post) {
+  if (!post || !postAuthor) {
     return null;
   }
 
@@ -187,9 +195,9 @@ function ViewPost() {
 
           <aside className="lg:sticky lg:top-24 lg:self-start">
             <AuthorBio
-              author={post.author}
-              avatar={post.author_image}
-              bio={post.author_bio}
+              author={postAuthor.name}
+              avatar={postAuthor.avatar}
+              bio={postAuthor.bio}
             />
           </aside>
         </div>
@@ -292,13 +300,13 @@ function AuthorBio({ author, avatar, bio }) {
     <section className="rounded-2xl bg-stone-100 p-6">
       <div className="flex items-center gap-3">
         <img
-          src={avatar || DEFAULT_AVATAR}
-          alt={`${author || "Author"} profile`}
+          src={avatar}
+          alt={`${author} profile`}
           className="size-12 rounded-full object-cover"
         />
         <div>
           <p className="text-sm text-stone-500">Author</p>
-          <p className="font-bold text-stone-950">{author || "Unknown"}</p>
+          <p className="font-bold text-stone-950">{author}</p>
         </div>
       </div>
       {bioText ? (
