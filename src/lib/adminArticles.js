@@ -1,5 +1,6 @@
 import { ARTICLE_STATUS } from "@/data/categories";
 import { api } from "@/lib/api";
+import { getErrorMessage } from "@/lib/getErrorMessage";
 
 export const ADMIN_ARTICLES_PAGE_SIZE = 15;
 
@@ -76,15 +77,6 @@ function findStatusId(statuses, articleStatus) {
   });
 
   return match?.id ?? null;
-}
-
-function getErrorMessage(error, fallback) {
-  return (
-    error.response?.data?.message ||
-    error.response?.data?.error ||
-    error.message ||
-    fallback
-  );
 }
 
 /** ดึงรายการบทความจาก API (สำหรับหน้า admin — pagination + filter ฝั่ง server) */
@@ -271,25 +263,4 @@ export async function deleteAdminArticle(articleId) {
       error: getErrorMessage(error, "Failed to delete post"),
     };
   }
-}
-
-/** กรองรายการฝั่ง client (ค้นหา / สถานะ / หมวด) */
-export function filterAdminArticles(
-  articles,
-  { keyword = "", status = "all", category = "all" } = {},
-) {
-  const normalizedKeyword = keyword.trim().toLowerCase();
-
-  return articles.filter((article) => {
-    const matchesKeyword =
-      !normalizedKeyword ||
-      article.title.toLowerCase().includes(normalizedKeyword) ||
-      (article.description || "").toLowerCase().includes(normalizedKeyword);
-
-    const matchesStatus = status === "all" || article.status === status;
-    const matchesCategory =
-      category === "all" || article.category === category;
-
-    return matchesKeyword && matchesStatus && matchesCategory;
-  });
 }

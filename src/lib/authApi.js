@@ -5,15 +5,7 @@ import {
   setAccessToken,
 } from "@/lib/api";
 import { ADMIN_ROLE, DEFAULT_AVATAR, USER_ROLE } from "@/lib/auth";
-
-function getErrorMessage(error, fallback) {
-  return (
-    error.response?.data?.error ||
-    error.response?.data?.message ||
-    error.message ||
-    fallback
-  );
-}
+import { getErrorMessage } from "@/lib/getErrorMessage";
 
 /** แปลงข้อมูลจาก /auth/get-user หรือ /auth/profile ให้เป็นรูปที่ UI ใช้ */
 export function mapApiUser(profile, fallbackEmail = "") {
@@ -180,5 +172,3 @@ export async function updateProfileWithApi({
 export function logoutApiSession() {
   clearAccessToken();
 }
-
-export { getErrorMessage };
