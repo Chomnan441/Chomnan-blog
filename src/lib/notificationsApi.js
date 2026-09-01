@@ -1,5 +1,6 @@
 import { api } from "@/lib/api";
 import { DEFAULT_AVATAR } from "@/lib/auth";
+import { getErrorMessage } from "@/lib/getErrorMessage";
 import { formatCommentDate } from "@/lib/formatDate";
 
 function formatRelativeTime(isoDate) {
@@ -62,11 +63,7 @@ export async function fetchNotifications() {
   } catch (error) {
     return {
       success: false,
-      error:
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        error.message ||
-        "Failed to load notifications",
+      error: getErrorMessage(error, "Failed to load notifications"),
       notifications: [],
     };
   }
@@ -79,10 +76,7 @@ export async function markAllNotificationsRead() {
   } catch (error) {
     return {
       success: false,
-      error:
-        error.response?.data?.error ||
-        error.message ||
-        "Failed to mark notifications as read",
+      error: getErrorMessage(error, "Failed to mark notifications as read"),
     };
   }
 }

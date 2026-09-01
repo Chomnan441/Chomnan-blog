@@ -1,13 +1,5 @@
 import { api } from "@/lib/api";
-
-function getErrorMessage(error, fallback) {
-  return (
-    error.response?.data?.error ||
-    error.response?.data?.message ||
-    error.message ||
-    fallback
-  );
-}
+import { getErrorMessage } from "@/lib/getErrorMessage";
 
 function mapCategory(row) {
   return {
