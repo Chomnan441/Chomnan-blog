@@ -50,7 +50,7 @@ function HeroSection() {
   }, []);
 
   return (
-    <section className="bg-blog-page">
+    <section>
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-10 md:px-8 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:items-center lg:gap-12 lg:px-16 lg:py-16">
         <div className="flex flex-col gap-6 lg:max-w-md">
           <h1 className="text-4xl font-bold leading-tight tracking-tight text-stone-950 md:text-5xl lg:text-[3.25rem] lg:leading-[1.1]">

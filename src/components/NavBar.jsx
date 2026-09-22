@@ -121,7 +121,7 @@ function NavBar() {
   const avatarSrc = user?.avatar || DEFAULT_AVATAR;
 
   return (
-    <header className="border-b border-stone-200 bg-blog-page">
+    <header className="border-b border-stone-200/80 bg-blog-page/70 backdrop-blur-md">
       <nav
         className="mx-auto flex max-w-7xl items-center justify-between px-4 py-0 md:px-8 lg:px-16"
         aria-label="Main navigation"
@@ -351,7 +351,7 @@ function NavBar() {
       {!isAuthenticated && isMenuOpen && (
         <div
           id="mobile-menu"
-          className="border-t border-stone-300/60 bg-blog-page px-4 py-4 md:hidden"
+          className="border-t border-stone-300/60 bg-blog-page/80 px-4 py-4 backdrop-blur-md md:hidden"
         >
           <div className="flex flex-col gap-3">
             <Button

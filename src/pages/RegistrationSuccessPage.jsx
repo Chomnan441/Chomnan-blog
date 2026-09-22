@@ -29,7 +29,7 @@ function RegistrationSuccessPage() {
 
   return (
     <AuthLayout>
-      <section className="flex w-full max-w-[440px] flex-col items-center rounded-3xl bg-stone-300/40 px-8 py-12 md:px-10 md:py-14">
+      <section className="flex w-full max-w-[440px] flex-col items-center rounded-3xl bg-white/90 px-8 py-12 md:px-10 md:py-14">
         <div
           className="mb-6 flex size-16 items-center justify-center rounded-full bg-emerald-500"
           aria-hidden="true"

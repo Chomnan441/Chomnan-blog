@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 
 function NotFoundPage() {
   return (
-    <div className="min-h-svh bg-blog-page">
+    <div className="flex min-h-svh flex-col bg-public-canvas">
       <NavBar />
       <main className="flex flex-1 flex-col items-center justify-center px-4 py-24">
         <div className="flex size-24 items-center justify-center rounded-full border-2 border-stone-300 text-4xl font-bold text-stone-500">
