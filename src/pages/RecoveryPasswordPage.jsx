@@ -168,7 +168,7 @@ function RecoveryPasswordPage() {
   if (isLinkInvalid) {
     return (
       <AuthLayout>
-        <section className="w-full max-w-[440px] rounded-3xl bg-stone-300/40 px-8 py-10 md:px-10 md:py-12">
+        <section className="w-full max-w-[440px] rounded-3xl bg-white/90 px-8 py-10 md:px-10 md:py-12">
           <h1 className="mb-4 text-center text-3xl font-bold text-stone-950">
             Invalid link
           </h1>
@@ -191,7 +191,7 @@ function RecoveryPasswordPage() {
 
   return (
     <AuthLayout>
-      <section className="w-full max-w-[440px] rounded-3xl bg-stone-300/40 px-8 py-10 md:px-10 md:py-12">
+      <section className="w-full max-w-[440px] rounded-3xl bg-white/90 px-8 py-10 md:px-10 md:py-12">
         <h1 className="mb-4 text-center text-3xl font-bold text-stone-950">
           Set new password
         </h1>

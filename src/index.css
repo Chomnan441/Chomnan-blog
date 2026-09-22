@@ -129,6 +129,31 @@
   }
 }
 
+/* Fixed night-sky canvas for public pages. Cream overlay keeps dark type readable. */
+.bg-public-canvas {
+  isolation: isolate;
+  background-color: #efeeeb;
+}
+
+.bg-public-canvas::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(
+      ellipse 120% 90% at 50% 35%,
+      rgb(239 238 235 / 78%) 0%,
+      rgb(239 238 235 / 58%) 62%,
+      rgb(239 238 235 / 36%) 100%
+    ),
+    url("./assets/page-background.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
 .markdown {
   font-size: 16px;
   font-weight: 400;

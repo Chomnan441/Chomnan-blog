@@ -121,7 +121,7 @@ function NavBar() {
   const avatarSrc = user?.avatar || DEFAULT_AVATAR;
 
   return (
-    <header className="border-b border-stone-200 bg-blog-page">
+    <header className="border-b border-stone-200/80 bg-blog-page/70 backdrop-blur-md">
       <nav
         className="mx-auto flex max-w-7xl items-center justify-between px-4 py-0 md:px-8 lg:px-16"
         aria-label="Main navigation"
@@ -130,12 +130,12 @@ function NavBar() {
         <Link to="/" className="group inline-flex shrink-0 items-center">
           <span className="relative inline-block h-15 md:h-20">
             <img
-              src={logo}
+              src={logoHover}
               alt="Chomnan Blog logo"
               className="h-15 w-auto object-contain opacity-100 transition-all duration-300 ease-in-out group-hover:scale-95 group-hover:opacity-0 md:h-20"
             />
             <img
-              src={logoHover}
+              src={logo}
               alt=""
               aria-hidden="true"
               className="absolute inset-0 h-full w-full scale-100 object-contain opacity-0 transition-all duration-300 ease-in-out group-hover:scale-100 group-hover:opacity-100"
@@ -351,7 +351,7 @@ function NavBar() {
       {!isAuthenticated && isMenuOpen && (
         <div
           id="mobile-menu"
-          className="border-t border-stone-300/60 bg-blog-page px-4 py-4 md:hidden"
+          className="border-t border-stone-300/60 bg-blog-page/80 px-4 py-4 backdrop-blur-md md:hidden"
         >
           <div className="flex flex-col gap-3">
             <Button

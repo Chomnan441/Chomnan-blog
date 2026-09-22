@@ -70,7 +70,7 @@ const socialLinks = [
 export function Footer() {
   return (
     // <footer> = แท็ก HTML สำหรับส่วนท้ายของหน้า (semantic HTML)
-    <footer className="border-t border-stone-200 bg-blog-page">
+    <footer className="border-t border-stone-200/80 bg-blog-page/70 backdrop-blur-md">
       {/* container จัด layout: แนวตั้งบนมือถือ, แนวนอนบนจอ md ขึ้นไป */}
       <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 px-4 py-8 md:flex-row md:items-center md:px-8 lg:px-16">
         {/* กลุ่มซ้าย: ข้อความ "Get in touch" + รายการไอคอนโซเชียล */}

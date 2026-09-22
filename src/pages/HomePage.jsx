@@ -5,9 +5,9 @@ import { Footer } from "@/components/Footer";
 
 function HomePage() {
   return (
-    <div className="min-h-svh bg-blog-page">
+    <div className="flex min-h-svh flex-col bg-public-canvas">
       <NavBar />
-      <main>
+      <main className="flex-1">
         <HeroSection />
         <ArticleSection />
       </main>

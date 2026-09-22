@@ -204,7 +204,7 @@ function ArticleSection() {
   // return (...) = JSX ที่จะแสดงบนหน้าจอ
   return (
     // <section> = แท็ก HTML semantic สำหรับส่วนเนื้อหาหลัก
-    <section className="bg-blog-page px-4 pb-12 md:px-8 lg:px-16">
+    <section className="px-4 pb-12 md:px-8 lg:px-16">
       <div className="mx-auto max-w-7xl rounded-3xl bg-white px-5 py-8 md:px-8 md:py-10">
         <h2 className="text-2xl font-bold text-stone-950 md:text-3xl">
           Latest articles
