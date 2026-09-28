@@ -28,6 +28,15 @@ function getInitialAuthStatus() {
   return getAccessToken() ? "loading" : "anonymous";
 }
 
+function isProtectedPath(pathname) {
+  return (
+    pathname === "/profile" ||
+    pathname === "/reset-password" ||
+    pathname === "/admin" ||
+    pathname.startsWith("/admin/")
+  );
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [authStatus, setAuthStatus] = useState(getInitialAuthStatus);
@@ -38,7 +47,7 @@ export function AuthProvider({ children }) {
       clearSession();
       setUser(null);
       setAuthStatus("anonymous");
-      if (!window.location.pathname.startsWith("/login")) {
+      if (isProtectedPath(window.location.pathname)) {
         window.location.assign("/login");
       }
     });
