@@ -271,7 +271,7 @@ function ArticleSection() {
                     // onClick = เมื่อกดปุ่ม → เปลี่ยน category → useEffect จะ fetch ข้อมูลใหม่
                     onClick={() => setCategory(item.value)}
                     className={cn(
-                      "rounded-full px-4 py-2 text-sm font-medium transition-colors",
+                      "cursor-pointer rounded-full px-4 py-2 text-sm font-medium transition-colors disabled:cursor-pointer",
                       isActive
                         ? "bg-stone-800 text-white"
                         : "text-stone-500 hover:bg-white",
