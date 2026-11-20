@@ -102,14 +102,20 @@ export async function forgotPasswordWithApi(email) {
 export async function recoveryPasswordWithApi({
   accessToken,
   refreshToken,
+  tokenHash,
   password,
 }) {
   try {
-    await api.post("/auth/recovery-password", {
-      accessToken,
-      refreshToken,
-      password,
-    });
+    await api.post(
+      "/auth/recovery-password",
+      {
+        accessToken,
+        refreshToken,
+        tokenHash,
+        password,
+      },
+      { skipAuth: true },
+    );
     return { success: true };
   } catch (error) {
     return {

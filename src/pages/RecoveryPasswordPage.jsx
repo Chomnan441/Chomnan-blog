@@ -20,15 +20,21 @@ function parseRecoverySessionFromUrlPart(part) {
   }
 
   const params = new URLSearchParams(part);
-  const accessToken = params.get("access_token");
-  const refreshToken = params.get("refresh_token");
   const type = params.get("type");
 
-  if (!accessToken || !refreshToken) {
+  if (type && type !== "recovery") {
     return null;
   }
 
-  if (type && type !== "recovery") {
+  const tokenHash = params.get("token_hash");
+  if (tokenHash) {
+    return { tokenHash };
+  }
+
+  const accessToken = params.get("access_token");
+  const refreshToken = params.get("refresh_token");
+
+  if (!accessToken || !refreshToken) {
     return null;
   }
 
@@ -67,8 +73,15 @@ function readCachedRecoverySession() {
   }
 
   try {
-    const { accessToken, refreshToken, at } = JSON.parse(raw);
-    if (!accessToken || !refreshToken || Date.now() - at > RECOVERY_CACHE_MS) {
+    const { accessToken, refreshToken, tokenHash, at } = JSON.parse(raw);
+    if (Date.now() - at > RECOVERY_CACHE_MS) {
+      sessionStorage.removeItem(RECOVERY_SESSION_KEY);
+      return null;
+    }
+    if (tokenHash) {
+      return { tokenHash };
+    }
+    if (!accessToken || !refreshToken) {
       sessionStorage.removeItem(RECOVERY_SESSION_KEY);
       return null;
     }
@@ -145,6 +158,7 @@ function RecoveryPasswordPage() {
     const result = await recoveryPasswordWithApi({
       accessToken: recoverySession.accessToken,
       refreshToken: recoverySession.refreshToken,
+      tokenHash: recoverySession.tokenHash,
       password: formData.newPassword,
     });
 
