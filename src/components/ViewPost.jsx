@@ -226,7 +226,7 @@ function ViewPost() {
                 });
               }
             }}
-            className="inline-flex items-center gap-2 rounded-full border border-stone-950 bg-white px-5 py-2.5 text-sm font-medium text-stone-950 transition-colors hover:bg-stone-50"
+            className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-stone-950 bg-white px-5 py-2.5 text-sm font-medium text-stone-950 transition-colors hover:bg-stone-50"
           >
             <SmilePlus className="size-4" aria-hidden="true" />
             {likes}
@@ -236,7 +236,7 @@ function ViewPost() {
             <button
               type="button"
               onClick={handleCopyLink}
-              className="inline-flex items-center gap-2 rounded-full border border-stone-950 bg-white px-5 py-2.5 text-sm font-medium text-stone-950 transition-colors hover:bg-stone-50"
+              className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-stone-950 bg-white px-5 py-2.5 text-sm font-medium text-stone-950 transition-colors hover:bg-stone-50"
             >
               <Copy className="size-4" aria-hidden="true" />
               Copy
