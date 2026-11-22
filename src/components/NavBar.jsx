@@ -121,7 +121,7 @@ function NavBar() {
   const avatarSrc = user?.avatar || DEFAULT_AVATAR;
 
   return (
-    <header className="border-b border-stone-200/80 bg-blog-page/70 backdrop-blur-md">
+    <header className="relative z-50 border-b border-stone-200/80 bg-blog-page/70 backdrop-blur-md">
       <nav
         className="mx-auto flex max-w-7xl items-center justify-between px-4 py-0 md:px-8 lg:px-16"
         aria-label="Main navigation"
